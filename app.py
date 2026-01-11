@@ -8,7 +8,7 @@ from datetime import datetime
 APP_NAME = "KKG Rama"
 CREATOR_NAME = "masdintop"   # <--- Ganti Nama Anda
 CREATOR_CONTACT = "sdn 4 kaliaman"   # <--- Ganti No WA
-CREATOR_MESSAGE = "Semoga Bermanfaat"
+CREATOR_MESSAGE = "SEMOGA BERMANFAAT"
 
 # --- KONFIGURASI GOOGLE DRIVE ---
 try:
@@ -75,10 +75,10 @@ if menu == "Beranda":
         
         # Menggunakan st.info agar ada kotak background, tapi isinya font normal
         st.info(f"""
-        Aplikasi ini dikelola oleh:  
-        **{CREATOR_NAME}** *(Admin)*
+        Aplikasi ini dibuat oleh:  
+        **{CREATOR_NAME}** *(orang baik)*
         
-        📧 Kontak: {CREATOR_CONTACT}  
+        📧 asal: {CREATOR_CONTACT}  
         _{CREATOR_MESSAGE}_
         """)
 
@@ -88,7 +88,7 @@ elif menu == "Upload Materi":
     
     password = st.text_input("Masukkan Password Admin:", type="password")
     
-    if password == "admin123": # <--- Ganti Password Upload Disini
+    if password == "gugusr4m4": # <--- Ganti Password Upload Disini
         st.success(f"Login Berhasil. Silakan upload, Pak {CREATOR_NAME}.")
         st.divider()
 
