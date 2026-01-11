@@ -101,11 +101,14 @@ elif menu == "Cari & Download":
     # --- PERBAIKAN DI SINI ---
     try:
         # Query dasar: Cari di dalam folder ID dan pastikan tidak di tempat sampah
+        # LOGIKA PENCARIAN BARU (BISA BACA SUBFOLDER)
+    if search_text:
+        # Jika user mengetik pencarian, cari di SEMUA folder (Recursively)
+        # Karena Service Account hanya punya akses ke Folder KKG, ini aman.
+        query = f"name contains '{search_text}' and trashed=false"
+    else:
+        # Jika kotak cari kosong, hanya tampilkan isi folder utama (biar rapi)
         query = f"'{PARENT_FOLDER_ID}' in parents and trashed=false"
-        
-        # Jika ada kata kunci pencarian
-        if search_text:
-            query += f" and name contains '{search_text}'"
         
         # Minta data ke Google Drive
         # KITA HAPUS 'iconLink' AGAR LEBIH STABIL
