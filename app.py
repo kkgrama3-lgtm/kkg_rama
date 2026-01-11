@@ -100,18 +100,15 @@ elif menu == "Cari & Download":
     
     # --- PERBAIKAN DI SINI ---
     try:
-        # Query dasar: Cari di dalam folder ID dan pastikan tidak di tempat sampah
         # LOGIKA PENCARIAN BARU (BISA BACA SUBFOLDER)
-    if search_text:
-        # Jika user mengetik pencarian, cari di SEMUA folder (Recursively)
-        # Karena Service Account hanya punya akses ke Folder KKG, ini aman.
-        query = f"name contains '{search_text}' and trashed=false"
-    else:
-        # Jika kotak cari kosong, hanya tampilkan isi folder utama (biar rapi)
-        query = f"'{PARENT_FOLDER_ID}' in parents and trashed=false"
+        if search_text:
+            # Jika user mengetik, cari di SEMUA folder (termasuk subfolder)
+            query = f"name contains '{search_text}' and trashed=false"
+        else:
+            # Jika kosong, hanya tampilkan isi folder utama saja
+            query = f"'{PARENT_FOLDER_ID}' in parents and trashed=false"
         
-        # Minta data ke Google Drive
-        # KITA HAPUS 'iconLink' AGAR LEBIH STABIL
+        # Eksekusi permintaan ke Google Drive
         results = drive_service.files().list(
             q=query, 
             fields="files(id, name, webViewLink)" 
@@ -124,7 +121,6 @@ elif menu == "Cari & Download":
                 with st.container():
                     c1, c2 = st.columns([5, 1])
                     with c1:
-                        # Menampilkan nama file dengan ikon dokumen standar
                         st.markdown(f"📄 **{item['name']}**")
                     with c2:
                         st.link_button("Buka/Download", item['webViewLink'])
@@ -133,6 +129,5 @@ elif menu == "Cari & Download":
             st.info("Tidak ada dokumen ditemukan.")
             
     except Exception as e:
-        # Jika error, tampilkan pesan aslinya agar kita tahu salahnya dimana
         st.error("Terjadi Masalah saat mengambil data.")
         st.warning(f"Detail Error: {e}")
