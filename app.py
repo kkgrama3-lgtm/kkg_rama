@@ -29,7 +29,7 @@ st.markdown("---")
 # Menu Sidebar
 menu = st.sidebar.selectbox("Menu Utama", ["Beranda", "Upload Materi", "Cari & Download"])
 st.sidebar.markdown("---")
-st.sidebar.info("Versi Web App 1.0")
+st.sidebar.info("Versi Web App 1.1 (Secured)")
 
 # Koneksi ke Drive
 try:
@@ -57,29 +57,41 @@ if menu == "Beranda":
         st.warning("Belum bisa membaca folder. Cek izin Share di Google Drive.")
 
 elif menu == "Upload Materi":
-    st.header("📤 Upload File Baru")
+    st.header("📤 Area Khusus Editor")
+    st.info("Menu ini diproteksi untuk menjaga keamanan data.")
     
-    uploaded_file = st.file_uploader("Pilih file (PDF, Word, Excel, Gambar)", type=['pdf', 'docx', 'xlsx', 'pptx', 'jpg', 'jpeg', 'png'])
-    kategori = st.selectbox("Jenis Dokumen", ["Administrasi KKG", "Perangkat Ajar (RPP/Modul)", "Undangan & Surat", "Dokumentasi Foto", "Lainnya"])
+    # --- FITUR PENGAMAN (PASSWORD) ---
+    # Password saat ini adalah: admin123
+    password = st.text_input("Masukkan Password Admin:", type="password")
     
-    if st.button("Simpan ke Cloud"):
-        if uploaded_file:
-            with st.spinner("Sedang mengirim data..."):
-                try:
-                    timestamp = datetime.now().strftime("%Y-%m-%d")
-                    file_metadata = {
-                        'name': f"[{kategori}] {timestamp} - {uploaded_file.name}",
-                        'parents': [PARENT_FOLDER_ID]
-                    }
-                    media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
-                    drive_service.files().create(body=file_metadata, media_body=media).execute()
-                    
-                    st.balloons()
-                    st.success("Alhamdulillah! File berhasil disimpan.")
-                except Exception as e:
-                    st.error(f"Gagal upload: {e}")
-        else:
-            st.warning("Mohon pilih file terlebih dahulu.")
+    if password == "admin123":  # <--- GANTI PASSWORD DI SINI JIKA MAU
+        st.success("Akses Diterima! Silakan upload.")
+        st.divider()
+        
+        uploaded_file = st.file_uploader("Pilih file (PDF, Word, Excel, Gambar)", type=['pdf', 'docx', 'xlsx', 'pptx', 'jpg', 'jpeg', 'png'])
+        kategori = st.selectbox("Jenis Dokumen", ["Administrasi KKG", "Perangkat Ajar (RPP/Modul)", "Undangan & Surat", "Dokumentasi Foto", "Lainnya"])
+        
+        if st.button("Simpan ke Cloud"):
+            if uploaded_file:
+                with st.spinner("Sedang mengirim data..."):
+                    try:
+                        timestamp = datetime.now().strftime("%Y-%m-%d")
+                        file_metadata = {
+                            'name': f"[{kategori}] {timestamp} - {uploaded_file.name}",
+                            'parents': [PARENT_FOLDER_ID]
+                        }
+                        media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
+                        drive_service.files().create(body=file_metadata, media_body=media).execute()
+                        
+                        st.balloons()
+                        st.success("Alhamdulillah! File berhasil disimpan.")
+                    except Exception as e:
+                        st.error(f"Gagal upload: {e}")
+            else:
+                st.warning("Mohon pilih file terlebih dahulu.")
+                
+    elif password != "":
+        st.error("Password salah. Hubungi Admin KKG.")
 
 elif menu == "Cari & Download":
     st.header("📂 Cari Arsip")
