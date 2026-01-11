@@ -99,21 +99,37 @@ elif menu == "Cari & Download":
     search_text = st.text_input("Ketik kata kunci (misal: RPP, Undangan)...")
     
     # Tampilkan file
-    query = f"'{PARENT_FOLDER_ID}' in parents and trashed=false"
-    if search_text:
-        query += f" and name contains '{search_text}'"
+  try:
+        # Query dasar: Cari di dalam folder ID dan pastikan tidak di tempat sampah
+        query = f"'{PARENT_FOLDER_ID}' in parents and trashed=false"
         
-    results = drive_service.files().list(q=query, fields="files(id, name, webViewLink, iconLink)").execute()
-    items = results.get('files', [])
+        # Jika ada kata kunci pencarian
+        if search_text:
+            query += f" and name contains '{search_text}'"
+        
+        # Minta data ke Google Drive
+        # KITA HAPUS 'iconLink' AGAR LEBIH STABIL
+        results = drive_service.files().list(
+            q=query, 
+            fields="files(id, name, webViewLink)" 
+        ).execute()
+        
+        items = results.get('files', [])
 
-    if items:
-        for item in items:
-            with st.container():
-                c1, c2 = st.columns([5, 1])
-                with c1:
-                    st.markdown(f"**{item['name']}**")
-                with c2:
-                    st.link_button("Buka/Download", item['webViewLink'])
-                st.divider()
-    else:
-        st.info("Tidak ada dokumen ditemukan.")
+        if items:
+            for item in items:
+                with st.container():
+                    c1, c2 = st.columns([5, 1])
+                    with c1:
+                        # Menampilkan nama file dengan ikon dokumen standar
+                        st.markdown(f"📄 **{item['name']}**")
+                    with c2:
+                        st.link_button("Buka/Download", item['webViewLink'])
+                    st.divider()
+        else:
+            st.info("Tidak ada dokumen ditemukan.")
+            
+    except Exception as e:
+        # Jika error, tampilkan pesan aslinya agar kita tahu salahnya dimana
+        st.error("Terjadi Masalah saat mengambil data.")
+        st.warning(f"Detail Error: {e}")
