@@ -98,8 +98,8 @@ elif menu == "Cari & Download":
     
     search_text = st.text_input("Ketik kata kunci (misal: RPP, Undangan)...")
     
-    # Tampilkan file
-  try:
+    # --- PERBAIKAN DI SINI ---
+    try:
         # Query dasar: Cari di dalam folder ID dan pastikan tidak di tempat sampah
         query = f"'{PARENT_FOLDER_ID}' in parents and trashed=false"
         
