@@ -5,9 +5,13 @@ from googleapiclient.http import MediaIoBaseUpload
 from datetime import datetime
 
 # --- KONFIGURASI ---
-# Mengambil rahasia dari Streamlit Cloud
 try:
+    # Mengambil ID Folder Utama
     PARENT_FOLDER_ID = st.secrets["gdrive"]["folder_id"]
+    # Membersihkan ID jika ada sisa URL (Jaga-jaga jika user lupa hapus tanda tanya)
+    if "?" in PARENT_FOLDER_ID:
+        PARENT_FOLDER_ID = PARENT_FOLDER_ID.split("?")[0]
+        
     SCOPES = ['https://www.googleapis.com/auth/drive']
 except:
     st.error("Konfigurasi Secrets belum diatur dengan benar.")
@@ -29,7 +33,7 @@ st.markdown("---")
 # Menu Sidebar
 menu = st.sidebar.selectbox("Menu Utama", ["Beranda", "Upload Materi", "Cari & Download"])
 st.sidebar.markdown("---")
-st.sidebar.info("Versi Web App 1.1 (Secured)")
+st.sidebar.info("Versi Web App 2.0 (Dynamic Folders)")
 
 # Koneksi ke Drive
 try:
@@ -40,93 +44,125 @@ except Exception as e:
 
 if menu == "Beranda":
     st.header("Selamat Datang Bapak/Ibu Guru")
-    st.success("Aplikasi ini terhubung langsung ke Penyimpanan Cloud.")
+    st.success("Aplikasi ini tersinkronisasi otomatis dengan Google Drive.")
     
-    # Cek jumlah file
     try:
+        # Hitung jumlah file di folder utama dan subfolder
+        # (Query sederhana untuk cek koneksi)
         query = f"'{PARENT_FOLDER_ID}' in parents and trashed=false"
         results = drive_service.files().list(q=query).execute()
         files = results.get('files', [])
         
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("Total Dokumen Tersimpan", len(files))
+            st.metric("Koneksi Database", "Terhubung 🟢")
         with col2:
-            st.metric("Status Server", "Online ✅")
+            st.metric("Folder Utama", "Siap Akses ✅")
+            
+        st.markdown("### 📢 Petunjuk Singkat")
+        st.markdown("""
+        1. **Beranda:** Cek status aplikasi.
+        2. **Upload Materi:** (Khusus Admin) Upload file langsung ke folder pilihan.
+        3. **Cari & Download:** Cari materi dari seluruh arsip KKG.
+        """)
     except:
-        st.warning("Belum bisa membaca folder. Cek izin Share di Google Drive.")
+        st.warning("Sedang menghubungkan ke Google Drive...")
 
 elif menu == "Upload Materi":
     st.header("📤 Area Khusus Editor")
-    st.info("Menu ini diproteksi untuk menjaga keamanan data.")
+    st.info("Kategori di bawah ini otomatis membaca Folder di Google Drive.")
     
-    # --- FITUR PENGAMAN (PASSWORD) ---
-    # Password saat ini adalah: admin123
+    # --- PASSWORD PROTECTION ---
     password = st.text_input("Masukkan Password Admin:", type="password")
     
-    if password == "admin123":  # <--- GANTI PASSWORD DI SINI JIKA MAU
+    if password == "admin123": # <--- Ganti Password disini jika mau
         st.success("Akses Diterima! Silakan upload.")
         st.divider()
-        
-        uploaded_file = st.file_uploader("Pilih file (PDF, Word, Excel, Gambar)", type=['pdf', 'docx', 'xlsx', 'pptx', 'jpg', 'jpeg', 'png'])
-        kategori = st.selectbox("Jenis Dokumen", ["Administrasi KKG", "Perangkat Ajar (RPP/Modul)", "Undangan & Surat", "Dokumentasi Foto", "Lainnya"])
-        
-        if st.button("Simpan ke Cloud"):
-            if uploaded_file:
-                with st.spinner("Sedang mengirim data..."):
-                    try:
-                        timestamp = datetime.now().strftime("%Y-%m-%d")
-                        file_metadata = {
-                            'name': f"[{kategori}] {timestamp} - {uploaded_file.name}",
-                            'parents': [PARENT_FOLDER_ID]
-                        }
-                        media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
-                        drive_service.files().create(body=file_metadata, media_body=media).execute()
-                        
-                        st.balloons()
-                        st.success("Alhamdulillah! File berhasil disimpan.")
-                    except Exception as e:
-                        st.error(f"Gagal upload: {e}")
-            else:
-                st.warning("Mohon pilih file terlebih dahulu.")
+
+        # --- FITUR BARU: BACA FOLDER OTOMATIS ---
+        try:
+            # Cari semua folder yang ada di dalam Folder Utama
+            folder_query = f"'{PARENT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
+            folder_results = drive_service.files().list(q=folder_query, fields="files(id, name)").execute()
+            folders = folder_results.get('files', [])
+            
+            # Jika ada folder, buat daftarnya
+            if folders:
+                folder_names = [f['name'] for f in folders]
+                # Pilihan folder
+                pilihan_folder = st.selectbox("Simpan ke Folder mana?", folder_names)
                 
+                # Cari ID dari nama folder yang dipilih
+                target_folder_id = next(item['id'] for item in folders if item["name"] == pilihan_folder)
+            else:
+                # Jika tidak ada folder sama sekali, pakai folder utama
+                st.warning("Tidak ditemukan sub-folder. File akan disimpan di Folder Utama.")
+                target_folder_id = PARENT_FOLDER_ID
+                
+            uploaded_file = st.file_uploader("Pilih file (PDF, Word, Excel, Gambar)", type=['pdf', 'docx', 'xlsx', 'pptx', 'jpg', 'jpeg', 'png'])
+            
+            if st.button("Simpan ke Cloud"):
+                if uploaded_file:
+                    with st.spinner(f"Mengupload ke folder '{pilihan_folder if folders else 'Utama'}'..."):
+                        try:
+                            timestamp = datetime.now().strftime("%Y-%m-%d")
+                            # Nama file asli, tanpa label manual karena sudah masuk folder
+                            file_metadata = {
+                                'name': f"{timestamp} - {uploaded_file.name}",
+                                'parents': [target_folder_id] # <--- Simpan ke ID folder yang dipilih
+                            }
+                            media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
+                            drive_service.files().create(body=file_metadata, media_body=media).execute()
+                            
+                            st.balloons()
+                            st.success(f"Sukses! File tersimpan di folder: {pilihan_folder if folders else 'Utama'}")
+                        except Exception as e:
+                            st.error(f"Gagal upload: {e}")
+                else:
+                    st.warning("Mohon pilih file terlebih dahulu.")
+                    
+        except Exception as e:
+            st.error(f"Gagal membaca daftar folder: {e}")
+
     elif password != "":
-        st.error("Password salah. Hubungi Admin KKG.")
+        st.error("Password salah.")
 
 elif menu == "Cari & Download":
     st.header("📂 Cari Arsip")
     
-    search_text = st.text_input("Ketik kata kunci (misal: RPP, Undangan)...")
+    search_text = st.text_input("Ketik kata kunci (Cari di semua folder)...")
     
-    # --- PERBAIKAN DI SINI ---
     try:
-        # LOGIKA PENCARIAN BARU (BISA BACA SUBFOLDER)
+        # LOGIKA PENCARIAN (RECURSIVE)
         if search_text:
-            # Jika user mengetik, cari di SEMUA folder (termasuk subfolder)
-            query = f"name contains '{search_text}' and trashed=false"
+            # Cari file di mana saja (di semua folder) yang namanya cocok
+            query = f"name contains '{search_text}' and trashed=false and mimeType != 'application/vnd.google-apps.folder'"
         else:
-            # Jika kosong, hanya tampilkan isi folder utama saja
+            # Jika kosong, tampilkan file di folder utama saja agar rapi
             query = f"'{PARENT_FOLDER_ID}' in parents and trashed=false"
         
-        # Eksekusi permintaan ke Google Drive
         results = drive_service.files().list(
             q=query, 
-            fields="files(id, name, webViewLink)" 
+            fields="files(id, name, webViewLink, parents)" 
         ).execute()
         
         items = results.get('files', [])
 
         if items:
+            st.markdown(f"*Ditemukan {len(items)} dokumen:*")
             for item in items:
                 with st.container():
                     c1, c2 = st.columns([5, 1])
                     with c1:
                         st.markdown(f"📄 **{item['name']}**")
                     with c2:
-                        st.link_button("Buka/Download", item['webViewLink'])
+                        st.link_button("Download", item['webViewLink'])
                     st.divider()
         else:
-            st.info("Tidak ada dokumen ditemukan.")
+            if search_text:
+                st.info("Tidak ada dokumen ditemukan dengan kata kunci tersebut.")
+            else:
+                st.info("Folder utama kosong. Coba gunakan fitur pencarian untuk melihat isi sub-folder.")
             
     except Exception as e:
         st.error("Terjadi Masalah saat mengambil data.")
