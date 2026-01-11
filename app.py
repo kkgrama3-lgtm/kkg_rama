@@ -6,8 +6,8 @@ from datetime import datetime
 
 # --- PENGATURAN IDENTITAS PEMBUAT (EDIT DISINI) ---
 APP_NAME = "KKG Rama"
-CREATOR_NAME = "masdintop"  # <--- Ganti dengan Nama Anda
-CREATOR_CONTACT = "SDN 4 Kaliaman" # <--- Ganti dengan No WA Anda (Opsional)
+CREATOR_NAME = "masdintop"   # <--- Ganti Nama Anda
+CREATOR_CONTACT = "sdn 4 kaliaman"   # <--- Ganti No WA
 CREATOR_MESSAGE = "Semoga Bermanfaat"
 
 # --- KONFIGURASI GOOGLE DRIVE ---
@@ -39,8 +39,8 @@ menu = st.sidebar.radio("Pilih Menu:", ["Beranda", "Upload Materi", "Cari & Down
 
 # Footer Sidebar (Identitas Kecil)
 st.sidebar.markdown("---")
-st.sidebar.caption(f"Developed by **{CREATOR_NAME}**")
-st.sidebar.caption("v2.1 © 2024")
+st.sidebar.caption(f"Dev: {CREATOR_NAME}")
+st.sidebar.caption("v2.2 © 2024")
 
 # Koneksi ke Drive
 try:
@@ -69,28 +69,27 @@ if menu == "Beranda":
 
     st.markdown("---")
     
-    # --- BAGIAN IDENTITAS PEMBUAT (TAMPIL DI BERANDA) ---
+    # --- BAGIAN IDENTITAS PEMBUAT (VERSI FONT KECIL & RAPI) ---
     with st.container():
-        st.subheader("👨‍💻 Tentang Pengembang")
+        st.markdown("**👨‍💻 Info Pengembang**") # Judul kecil tebal
+        
+        # Menggunakan st.info agar ada kotak background, tapi isinya font normal
         st.info(f"""
-        Aplikasi **{APP_NAME}** ini dibuat dan dikelola oleh:
+        Aplikasi ini dikelola oleh:  
+        **{CREATOR_NAME}** *(Admin)*
         
-        ### **{CREATOR_NAME}**
-        *(Admin & Developer)*
-        
-        📞 **Kontak Support:** {CREATOR_CONTACT}
-        
-        > "{CREATOR_MESSAGE}"
+        📧 Kontak: {CREATOR_CONTACT}  
+        _{CREATOR_MESSAGE}_
         """)
 
 elif menu == "Upload Materi":
     st.header("📤 Area Khusus Editor")
-    st.info("Kategori di bawah ini otomatis membaca Folder di Google Drive.")
+    st.caption("Pilih folder tujuan upload di bawah ini.") # Font kecil
     
     password = st.text_input("Masukkan Password Admin:", type="password")
     
     if password == "admin123": # <--- Ganti Password Upload Disini
-        st.success(f"Login Berhasil! Halo, {CREATOR_NAME}.")
+        st.success(f"Login Berhasil. Silakan upload, Pak {CREATOR_NAME}.")
         st.divider()
 
         try:
@@ -145,14 +144,14 @@ elif menu == "Cari & Download":
         items = results.get('files', [])
 
         if items:
-            st.write(f"Ditemukan {len(items)} file:")
+            st.caption(f"Menampilkan {len(items)} dokumen terbaru:")
             for item in items:
                 with st.container():
                     c1, c2 = st.columns([5, 1])
                     with c1:
-                        st.markdown(f"📄 **{item['name']}**")
+                        st.markdown(f"📄 {item['name']}") # Nama file normal (tidak bold besar)
                     with c2:
-                        st.link_button("Download", item['webViewLink'])
+                        st.link_button("Unduh", item['webViewLink'])
                     st.divider()
         else:
             st.info("Tidak ada dokumen ditemukan.")
