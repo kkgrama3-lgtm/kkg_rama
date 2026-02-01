@@ -4,7 +4,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from datetime import datetime
 import io
-from PIL import Image
+import base64 # Import baru untuk teknik Overlay Gambar
 
 # --- PENGATURAN IDENTITAS PEMBUAT ---
 APP_NAME = "KKG Rama"
@@ -69,6 +69,15 @@ def get_announcements(service, parent_id):
     except:
         return []
 
+# Fungsi Mengubah Gambar jadi Kode (Agar bisa diedit HTML)
+def get_img_as_base64(file_path):
+    try:
+        with open(file_path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except:
+        return None
+
 # --- TAMPILAN APLIKASI ---
 st.set_page_config(page_title=APP_NAME, page_icon="🏫", layout="wide")
 drive_service = get_drive_service()
@@ -77,36 +86,54 @@ drive_service = get_drive_service()
 st.sidebar.title("Navigasi")
 main_menus = ["Beranda"]
 st.sidebar.markdown("**📂 Daftar Isi:**")
+
 folders = get_folders(drive_service, PARENT_FOLDER_ID)
 folder_map = {f['name']: f['id'] for f in folders}
 folder_names = list(folder_map.keys())
-footer_menus = ["🔐 Area Admin (Upload & Info)", "🚪 Keluar Aplikasi"]
+
+# --- REVISI MENU: GANTI NAMA MENU ---
+footer_menus = ["🔐 Area Admin (Upload Info)", "🚪 Keluar Aplikasi"]
+
 all_menus = main_menus + folder_names + footer_menus
 selected_menu = st.sidebar.radio("Pilih Halaman:", all_menus)
 
 st.sidebar.markdown("---")
 st.sidebar.caption(f"Dev: {CREATOR_NAME}")
-st.sidebar.caption("v4.4 (Smart Error Handling)")
+st.sidebar.caption("v5.0 (Hero Header)")
 
 # =========================================
 # HALAMAN 1: BERANDA
 # =========================================
 if selected_menu == "Beranda":
-    try:
-        st.image(HEADER_IMAGE_FILE, use_column_width=True)
-    except:
-        st.warning(f"Gambar header '{HEADER_IMAGE_FILE}' belum ditemukan.")
-
-    try:
-        col_logo, col_title = st.columns([1, 5])
-        with col_logo: st.image(LOGO_IMAGE_FILE, width=120)
-        with col_title:
-            st.markdown(f"# Portal {APP_NAME}")
-            st.markdown("#### Aplikasi Berbagi Materi KKG")
-    except:
-         st.title(f"🏫 Portal {APP_NAME}")
     
-    st.markdown("---")
+    # --- REVISI HEADER: GAMBAR TRANSPARAN + TULISAN DI ATASNYA ---
+    img_base64 = get_img_as_base64(HEADER_IMAGE_FILE)
+    
+    if img_base64:
+        # Kita gunakan CSS HTML untuk membuat efek "Tumpuk"
+        # rgba(0,0,0, 0.6) artinya warna hitam dengan transparansi 60% agar tulisan putih terbaca
+        header_html = f"""
+        <div style="
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('data:image/jpg;base64,{img_base64}');
+            background-size: cover;
+            background-position: center;
+            border-radius: 15px;
+            padding: 80px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        ">
+            <h1 style="color: white; font-size: 50px; text-shadow: 2px 2px 4px #000000; margin: 0;">PORTAL {APP_NAME}</h1>
+            <p style="color: #f0f0f0; font-size: 20px; margin-top: 10px;">Aplikasi Berbagi Materi KKG & Informasi Terupdate</p>
+        </div>
+        """
+        st.markdown(header_html, unsafe_allow_html=True)
+    else:
+        # Fallback jika gambar rusak/belum diupload
+        st.warning(f"Gambar '{HEADER_IMAGE_FILE}' belum ditemukan. Upload dulu ke GitHub.")
+        st.title(f"Portal {APP_NAME}")
+
+    # Info Pengembang
     with st.expander("ℹ️ Info Pengembang & Status Aplikasi", expanded=False):
         c1, c2 = st.columns([2, 1])
         with c1:
@@ -117,6 +144,7 @@ if selected_menu == "Beranda":
             
     st.markdown("---")
 
+    # Pencarian
     st.subheader("🔍 Cari Dokumen")
     search_text = st.text_input("Ketik kata kunci dokumen...", placeholder="Contoh: Modul Ajar Kelas 1")
     
@@ -142,6 +170,8 @@ if selected_menu == "Beranda":
                 st.error("Gagal mencari.")
     
     st.markdown("---")
+    
+    # --- INFO UPDATE (TETAP TAMPIL DI BERANDA) ---
     st.subheader("📢 Papan Informasi Update")
     infos = get_announcements(drive_service, PARENT_FOLDER_ID)
     if infos:
@@ -158,6 +188,7 @@ if selected_menu == "Beranda":
 # =========================================
 elif selected_menu in folder_names:
     current_folder_id = folder_map[selected_menu]
+    # Logo tetap ada di halaman dalam
     try:
         c_log, c_tit = st.columns([0.5, 5])
         with c_log: st.image(LOGO_IMAGE_FILE, width=60)
@@ -192,12 +223,14 @@ elif selected_menu in folder_names:
 # =========================================
 # HALAMAN 3: AREA ADMIN
 # =========================================
-elif selected_menu == "🔐 Area Admin (Upload & Info)":
+elif selected_menu == "🔐 Area Admin (Upload Info)":
     st.title("🔐 Area Khusus Admin")
     password = st.text_input("Masukkan Password Admin:", type="password")
     
     if password == "admin123":
         st.success(f"Akses Diterima.")
+        
+        # Menu Tab Admin
         tab1, tab2 = st.tabs(["📤 Upload File", "📢 Tulis Info Update"])
         
         # --- TAB 1: UPLOAD FILE ---
@@ -227,15 +260,11 @@ elif selected_menu == "🔐 Area Admin (Upload & Info)":
                             
                             st.success("Berhasil Upload!")
                         except Exception as e:
-                            # PENANGANAN KHUSUS ERROR KUOTA
+                            # Handling Error Kuota Gratis
                             error_message = str(e)
                             if "storageQuotaExceeded" in error_message or "Service Accounts do not have storage quota" in error_message:
                                 st.error("⚠️ Gagal: Kuota Robot Habis/Dibatasi.")
-                                st.warning("""
-                                **Masalah:** Akun Google Gratis membatasi Robot untuk membuat file baru.
-                                **Solusi:** Silakan upload manual lewat link tombol di bawah ini. File akan tetap muncul di aplikasi setelah diupload.
-                                """)
-                                # Link ke Folder Google Drive yang dituju
+                                st.warning("Solusi: Silakan upload manual lewat tombol di bawah. File akan otomatis terbaca aplikasi.")
                                 folder_link = f"https://drive.google.com/drive/u/0/folders/{target_folder_id}"
                                 st.link_button(f"📂 Buka Folder '{pilihan_folder}' di Google Drive", folder_link)
                             else:
@@ -244,6 +273,8 @@ elif selected_menu == "🔐 Area Admin (Upload & Info)":
         # --- TAB 2: TULIS INFO UPDATE ---
         with tab2:
             st.subheader("Buat Pengumuman Baru")
+            st.markdown("Info yang ditulis di sini akan muncul di halaman Beranda.")
+            
             judul_info = st.text_input("Judul Info:", placeholder="Contoh: Jadwal Maret")
             isi_info = st.text_area("Isi Pengumuman:", height=150)
             
@@ -262,10 +293,13 @@ elif selected_menu == "🔐 Area Admin (Upload & Info)":
                             
                             st.success("Info berhasil diterbitkan!")
                         except Exception as e:
+                            # Handling Error Kuota Gratis
                             error_message = str(e)
                             if "storageQuotaExceeded" in error_message:
-                                st.error("⚠️ Gagal Terbit: Batasan Akun Gratis.")
-                                st.info("Tips: Gunakan akun Belajar.id (Shared Drive) agar fitur ini berfungsi.")
+                                st.error("⚠️ Gagal: Robot Dibatasi Kuota.")
+                                st.warning("Karena akun gratis, silakan buat file Text (.txt) secara manual di Google Drive.")
+                                folder_link = f"https://drive.google.com/drive/u/0/folders/{PARENT_FOLDER_ID}"
+                                st.link_button("📂 Buka Google Drive Utama", folder_link)
                             else:
                                 st.error(f"Gagal: {e}")
     elif password != "":
