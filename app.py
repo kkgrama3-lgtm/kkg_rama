@@ -4,15 +4,14 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from datetime import datetime
 import io
-from PIL import Image # Import tambahan untuk menangani gambar
+from PIL import Image
 
 # --- PENGATURAN IDENTITAS PEMBUAT ---
 APP_NAME = "KKG Rama"
-CREATOR_NAME = "masdintop (sdn4kaliaman)"   # <--- Ganti Nama Anda
-CREATOR_CONTACT = "Pengurus KKG Rama 2026-2030"   # <--- Ganti No WA
+CREATOR_NAME = "masdintop (sdn4kaliaman)"
+CREATOR_CONTACT = "Pengurus KKG Rama 2026-2030"
 
-# --- PENGATURAN GAMBAR (Pastikan file ini sudah di-upload ke GitHub) ---
-# Ganti nama file di dalam kutip jika nama file Bapak berbeda
+# --- PENGATURAN GAMBAR ---
 HEADER_IMAGE_FILE = "Foto Bareng KKG.jpg" 
 LOGO_IMAGE_FILE = "Logo KKG Rama.png"
 
@@ -43,7 +42,10 @@ def get_drive_service():
 def get_folders(service, parent_id):
     try:
         query = f"'{parent_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
-        results = service.files().list(q=query, fields="files(id, name)", orderBy="name").execute()
+        results = service.files().list(
+            q=query, fields="files(id, name)", orderBy="name",
+            supportsAllDrives=True, includeItemsFromAllDrives=True
+        ).execute()
         return results.get('files', [])
     except:
         return []
@@ -51,7 +53,10 @@ def get_folders(service, parent_id):
 def get_announcements(service, parent_id):
     try:
         query = f"'{parent_id}' in parents and name contains '[INFO]' and trashed=false"
-        results = service.files().list(q=query, fields="files(id, name, createdTime)", orderBy="createdTime desc").execute()
+        results = service.files().list(
+            q=query, fields="files(id, name, createdTime)", orderBy="createdTime desc",
+            supportsAllDrives=True, includeItemsFromAllDrives=True
+        ).execute()
         files = results.get('files', [])
         announcements = []
         for file in files:
@@ -65,7 +70,6 @@ def get_announcements(service, parent_id):
         return []
 
 # --- TAMPILAN APLIKASI ---
-# Di sini kita pakai emoji untuk ikon di tab browser (karena harus emoji/file .ico)
 st.set_page_config(page_title=APP_NAME, page_icon="🏫", layout="wide")
 drive_service = get_drive_service()
 
@@ -82,36 +86,26 @@ selected_menu = st.sidebar.radio("Pilih Halaman:", all_menus)
 
 st.sidebar.markdown("---")
 st.sidebar.caption(f"Dev: {CREATOR_NAME}")
-st.sidebar.caption("v4.2 (Custom Logo)")
+st.sidebar.caption("v4.4 (Smart Error Handling)")
 
 # =========================================
 # HALAMAN 1: BERANDA
 # =========================================
 if selected_menu == "Beranda":
-    # A. FOTO HEADER (Membaca file yang diupload ke GitHub)
     try:
         st.image(HEADER_IMAGE_FILE, use_column_width=True)
     except:
-        # Pesan darurat jika lupa upload file header
-        st.warning(f"Gambar header '{HEADER_IMAGE_FILE}' belum ditemukan. Silakan upload ke GitHub.")
+        st.warning(f"Gambar header '{HEADER_IMAGE_FILE}' belum ditemukan.")
 
-    # B. JUDUL DENGAN LOGO KKG (Menggunakan Kolom)
     try:
-        # Bagi area menjadi kolom kecil (1) dan besar (5)
         col_logo, col_title = st.columns([1, 5])
-        with col_logo:
-            # Tampilkan Logo
-            st.image(LOGO_IMAGE_FILE, width=120) # Atur width agar ukuran pas
+        with col_logo: st.image(LOGO_IMAGE_FILE, width=120)
         with col_title:
-            # Tampilkan Judul Teks (Vertikal di tengah)
             st.markdown(f"# Portal {APP_NAME}")
             st.markdown("#### Aplikasi Berbagi Materi KKG")
     except:
-         # Pesan darurat jika lupa upload file logo, tampilkan judul biasa
          st.title(f"🏫 Portal {APP_NAME}")
-         st.caption("Logo belum diupload ke GitHub.")
     
-    # C. INFO PENGEMBANG
     st.markdown("---")
     with st.expander("ℹ️ Info Pengembang & Status Aplikasi", expanded=False):
         c1, c2 = st.columns([2, 1])
@@ -123,15 +117,17 @@ if selected_menu == "Beranda":
             
     st.markdown("---")
 
-    # D. PENCARIAN
     st.subheader("🔍 Cari Dokumen")
-    search_text = st.text_input("Ketik kata kunci dokumen...", placeholder="Contoh: Modul 1")
+    search_text = st.text_input("Ketik kata kunci dokumen...", placeholder="Contoh: Modul Ajar Kelas 1")
     
     if search_text:
         with st.spinner("Mencari..."):
             try:
                 query = f"name contains '{search_text}' and trashed=false and mimeType != 'application/vnd.google-apps.folder'"
-                results = drive_service.files().list(q=query, fields="files(id, name, webViewLink)").execute()
+                results = drive_service.files().list(
+                    q=query, fields="files(id, name, webViewLink)",
+                    supportsAllDrives=True, includeItemsFromAllDrives=True
+                ).execute()
                 items = results.get('files', [])
                 if items:
                     st.success(f"Ditemukan {len(items)} hasil:")
@@ -146,7 +142,6 @@ if selected_menu == "Beranda":
                 st.error("Gagal mencari.")
     
     st.markdown("---")
-    # E. PAPAN INFORMASI UPDATE
     st.subheader("📢 Papan Informasi Update")
     infos = get_announcements(drive_service, PARENT_FOLDER_ID)
     if infos:
@@ -163,7 +158,6 @@ if selected_menu == "Beranda":
 # =========================================
 elif selected_menu in folder_names:
     current_folder_id = folder_map[selected_menu]
-    # Di halaman kategori juga kita pasang logo kecil
     try:
         c_log, c_tit = st.columns([0.5, 5])
         with c_log: st.image(LOGO_IMAGE_FILE, width=60)
@@ -172,10 +166,12 @@ elif selected_menu in folder_names:
         st.title(f"📂 {selected_menu}")
         
     st.markdown("---")
-    
     try:
         query = f"'{current_folder_id}' in parents and trashed=false"
-        results = drive_service.files().list(q=query, fields="files(id, name, webViewLink, mimeType)").execute()
+        results = drive_service.files().list(
+            q=query, fields="files(id, name, webViewLink, mimeType)",
+            supportsAllDrives=True, includeItemsFromAllDrives=True
+        ).execute()
         items = results.get('files', [])
         
         if items:
@@ -204,6 +200,7 @@ elif selected_menu == "🔐 Area Admin (Upload & Info)":
         st.success(f"Akses Diterima.")
         tab1, tab2 = st.tabs(["📤 Upload File", "📢 Tulis Info Update"])
         
+        # --- TAB 1: UPLOAD FILE ---
         with tab1:
             st.subheader("Upload Dokumen Baru")
             if folder_names:
@@ -214,6 +211,7 @@ elif selected_menu == "🔐 Area Admin (Upload & Info)":
                 target_folder_id = PARENT_FOLDER_ID
                 
             uploaded_file = st.file_uploader("Pilih file:", type=['pdf', 'docx', 'xlsx', 'pptx', 'jpg', 'png'])
+            
             if st.button("🚀 Upload File"):
                 if uploaded_file:
                     with st.spinner("Mengunggah..."):
@@ -221,15 +219,34 @@ elif selected_menu == "🔐 Area Admin (Upload & Info)":
                             timestamp = datetime.now().strftime("%Y-%m-%d")
                             file_metadata = {'name': f"{timestamp} - {uploaded_file.name}", 'parents': [target_folder_id]}
                             media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
-                            drive_service.files().create(body=file_metadata, media_body=media).execute()
+                            
+                            drive_service.files().create(
+                                body=file_metadata, media_body=media, 
+                                supportsAllDrives=True
+                            ).execute()
+                            
                             st.success("Berhasil Upload!")
                         except Exception as e:
-                            st.error(f"Gagal: {e}")
+                            # PENANGANAN KHUSUS ERROR KUOTA
+                            error_message = str(e)
+                            if "storageQuotaExceeded" in error_message or "Service Accounts do not have storage quota" in error_message:
+                                st.error("⚠️ Gagal: Kuota Robot Habis/Dibatasi.")
+                                st.warning("""
+                                **Masalah:** Akun Google Gratis membatasi Robot untuk membuat file baru.
+                                **Solusi:** Silakan upload manual lewat link tombol di bawah ini. File akan tetap muncul di aplikasi setelah diupload.
+                                """)
+                                # Link ke Folder Google Drive yang dituju
+                                folder_link = f"https://drive.google.com/drive/u/0/folders/{target_folder_id}"
+                                st.link_button(f"📂 Buka Folder '{pilihan_folder}' di Google Drive", folder_link)
+                            else:
+                                st.error(f"Gagal: {e}")
 
+        # --- TAB 2: TULIS INFO UPDATE ---
         with tab2:
             st.subheader("Buat Pengumuman Baru")
             judul_info = st.text_input("Judul Info:", placeholder="Contoh: Jadwal Maret")
             isi_info = st.text_area("Isi Pengumuman:", height=150)
+            
             if st.button("💾 Terbitkan Info"):
                 if judul_info and isi_info:
                     with st.spinner("Menerbitkan..."):
@@ -237,10 +254,20 @@ elif selected_menu == "🔐 Area Admin (Upload & Info)":
                             tanggal = datetime.now().strftime("%d-%m-%Y")
                             file_metadata = {'name': f"[INFO] {tanggal} - {judul_info}.txt", 'parents': [PARENT_FOLDER_ID], 'mimeType': 'text/plain'}
                             media = MediaIoBaseUpload(io.BytesIO(isi_info.encode('utf-8')), mimetype='text/plain', resumable=True)
-                            drive_service.files().create(body=file_metadata, media_body=media).execute()
+                            
+                            drive_service.files().create(
+                                body=file_metadata, media_body=media, 
+                                supportsAllDrives=True
+                            ).execute()
+                            
                             st.success("Info berhasil diterbitkan!")
                         except Exception as e:
-                            st.error(f"Gagal: {e}")
+                            error_message = str(e)
+                            if "storageQuotaExceeded" in error_message:
+                                st.error("⚠️ Gagal Terbit: Batasan Akun Gratis.")
+                                st.info("Tips: Gunakan akun Belajar.id (Shared Drive) agar fitur ini berfungsi.")
+                            else:
+                                st.error(f"Gagal: {e}")
     elif password != "":
         st.error("Password salah.")
 
