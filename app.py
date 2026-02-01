@@ -9,7 +9,7 @@ from PIL import Image # Import tambahan untuk menangani gambar
 # --- PENGATURAN IDENTITAS PEMBUAT ---
 APP_NAME = "KKG Rama"
 CREATOR_NAME = "masdintop (sdn4kaliaman)"   # <--- Ganti Nama Anda
-CREATOR_CONTACT = "support by Pengurus KKG Rama 2026-2030"   # <--- Ganti No WA
+CREATOR_CONTACT = "Pengurus KKG Rama 2026-2030"   # <--- Ganti No WA
 
 # --- PENGATURAN GAMBAR (Pastikan file ini sudah di-upload ke GitHub) ---
 # Ganti nama file di dalam kutip jika nama file Bapak berbeda
