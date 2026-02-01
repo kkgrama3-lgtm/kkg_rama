@@ -70,7 +70,7 @@ drive_service = get_drive_service()
 st.sidebar.title("Navigasi")
 
 # 1. Menu Tetap Atas (Hanya Beranda)
-main_menus = ["🏠 Beranda"]
+main_menus = ["Beranda"]
 
 # 2. Menu Dinamis (Folder Drive)
 st.sidebar.markdown("**📂 Kategori Materi:**")
@@ -93,7 +93,7 @@ st.sidebar.caption("v4.1 (Reordered Menu)")
 # =========================================
 # HALAMAN 1: BERANDA
 # =========================================
-if selected_menu == "🏠 Beranda":
+if selected_menu == "Beranda":
     st.image(HEADER_IMAGE_URL, use_column_width=True)
     st.title(f"🏫 Portal {APP_NAME}")
     
