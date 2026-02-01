@@ -187,7 +187,7 @@ if selected_menu == "Beranda":
         except: st.info("Foto header belum diupload.")
         
         with st.expander("ℹ️ Tentang Aplikasi", expanded=True):
-            st.caption(f"Aplikasi ini dikelola oleh **{CREATOR_NAME}**.")
+            st.caption(f"Aplikasi ini dikelola oleh **{CREATOR_NAME}**, disupport oleh **{CREATOR_CONTACT}.")
 
 # =========================================
 # HALAMAN 2: KATEGORI FOLDER
@@ -223,19 +223,15 @@ elif selected_menu in folder_names:
 # =========================================
 elif selected_menu == "🔐 Area Admin (Upload Info)":
     st.title("🔐 Area Admin")
-    st.info("Halaman ini khusus untuk Pengurus mengupload materi & info.")
-    
     password = st.text_input("Masukkan Password Admin:", type="password")
     
     if password == "admin123":
         st.success("Login Berhasil.")
-        tab1, tab2 = st.tabs(["📤 Upload Materi", "📢 Kelola Info Beranda"])
+        tab1, tab2 = st.tabs(["📤 Upload Materi", "📢 Tulis Info Beranda"])
         
-        # --- TAB 1: UPLOAD DOKUMEN ---
+        # --- TAB 1: UPLOAD DOKUMEN (Masuk ke Folder Pilihan / Utama) ---
         with tab1:
             st.subheader("Upload Dokumen")
-            st.caption("Jika upload gagal karena kuota robot, gunakan link manual di bawah.")
-            
             if folder_names:
                 pilihan_folder = st.selectbox("Pilih Folder Tujuan:", folder_names)
                 target_folder_id = folder_map[pilihan_folder]
@@ -248,44 +244,37 @@ elif selected_menu == "🔐 Area Admin (Upload Info)":
                 if uploaded_file:
                     with st.spinner("Mengupload..."):
                         try:
-                            # Mencoba Upload lewat Robot
                             file_metadata = {'name': uploaded_file.name, 'parents': [target_folder_id]}
                             media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
                             drive_service.files().create(body=file_metadata, media_body=media, supportsAllDrives=True).execute()
                             st.success("✅ Dokumen berhasil diupload!")
                         except Exception as e:
-                            # Jika Gagal (Error Kuota), Tampilkan Link Manual
-                            st.error("⚠️ Gagal Upload (Kuota Robot Habis).")
-                            st.markdown("Silakan upload manual lewat tombol ini, file akan otomatis muncul di aplikasi:")
-                            link_folder = f"https://drive.google.com/drive/u/0/folders/{target_folder_id}"
-                            st.link_button(f"📂 Buka Folder '{pilihan_folder}' di Google Drive", link_folder)
+                            st.error(f"Gagal: {e}")
 
-        # --- TAB 2: KELOLA INFO (SOLUSI PERMANEN) ---
+        # --- TAB 2: TULIS INFO (Masuk ke Folder KHUSUS INFO) ---
         with tab2:
-            st.subheader("📢 Kelola Info Beranda")
-            st.markdown("""
-            **Cara Menerbitkan Info Baru:**
-            Karena pembatasan Google, Info harus dibuat langsung di dalam Folder Drive.
+            st.subheader("Tulis Info Baru")
+            st.markdown(f"Info ini akan disimpan otomatis ke folder khusus (ID: `{INFO_FOLDER_ID[:5]}...`).")
             
-            1. Klik tombol **"📂 Buka Folder Info"** di bawah.
-            2. Di dalam Google Drive, Klik **Baru (+) -> Google Dokumen** (atau File Teks).
-            3. Beri Judul file dengan format: `[INFO] Judul Info Anda`.
-            4. Tulis isinya di dalam file tersebut.
-            5. Selesai! Info akan otomatis muncul di Beranda aplikasi.
-            """)
+            judul_info = st.text_input("Judul Singkat:")
+            isi_info = st.text_area("Isi Pengumuman:", height=100)
             
-            # Tombol Link Langsung ke Folder Info
-            if "MASUKKAN_ID" not in INFO_FOLDER_ID:
-                link_info = f"https://drive.google.com/drive/u/0/folders/{INFO_FOLDER_ID}"
-                st.link_button("📂 Buka Folder Info (Google Drive)", link_info)
-            else:
-                st.error("⚠️ ID Folder Info belum diatur di script (Baris 20).")
-                link_parent = f"https://drive.google.com/drive/u/0/folders/{PARENT_FOLDER_ID}"
-                st.link_button("📂 Buka Folder Utama", link_parent)
-                
-            st.divider()
-            st.caption("Tips: Jika info sudah tidak relevan, cukup hapus file tersebut dari Google Drive.")
-
+            if st.button("💾 Terbitkan Info"):
+                if judul_info and isi_info:
+                    with st.spinner("Menerbitkan..."):
+                        try:
+                            tanggal = datetime.now().strftime("%d-%m-%Y")
+                            # Simpan ke INFO_FOLDER_ID, bukan Parent Utama
+                            file_metadata = {
+                                'name': f"[INFO] {tanggal} - {judul_info}.txt", 
+                                'parents': [INFO_FOLDER_ID], 
+                                'mimeType': 'text/plain'
+                            }
+                            media = MediaIoBaseUpload(io.BytesIO(isi_info.encode('utf-8')), mimetype='text/plain', resumable=True)
+                            drive_service.files().create(body=file_metadata, media_body=media, supportsAllDrives=True).execute()
+                            st.success("✅ Info berhasil tampil di Beranda!")
+                        except Exception as e:
+                            st.error(f"Gagal: {e}")
     elif password != "":
         st.error("Password salah.")
 
