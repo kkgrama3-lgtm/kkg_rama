@@ -98,7 +98,7 @@ if selected_menu == "Beranda":
     # B. JUDUL DENGAN LOGO KKG (Menggunakan Kolom)
     try:
         # Bagi area menjadi kolom kecil (1) dan besar (5)
-        col_logo, col_title = st.columns([1, 5])
+        col_logo, col_title = st.columns([1, 7])
         with col_logo:
             # Tampilkan Logo
             st.image(LOGO_IMAGE_FILE, width=120) # Atur width agar ukuran pas
