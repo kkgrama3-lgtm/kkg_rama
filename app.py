@@ -4,15 +4,17 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from datetime import datetime
 import io
+from PIL import Image # Import tambahan untuk menangani gambar
 
 # --- PENGATURAN IDENTITAS PEMBUAT ---
 APP_NAME = "KKG Rama"
 CREATOR_NAME = "masdintop (sdn4kaliaman)"   # <--- Ganti Nama Anda
 CREATOR_CONTACT = "support by Pengurus KKG Rama 2026-2030"   # <--- Ganti No WA
-CREATOR_MESSAGE = "Hubungi saya jika ada kendala akses."
 
-# --- URL FOTO HEADER ---
-HEADER_IMAGE_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiPq6jM3uGz9ZZ4Q7f5X5x8Y8Y8Y8Y8Y8Y8Y8Y8Y8/s1600/guru-belajar.jpg" 
+# --- PENGATURAN GAMBAR (Pastikan file ini sudah di-upload ke GitHub) ---
+# Ganti nama file di dalam kutip jika nama file Bapak berbeda
+HEADER_IMAGE_FILE = "Foto Bareng KKG.jpg" 
+LOGO_IMAGE_FILE = "Logo KKG Rama.png"
 
 # --- KONFIGURASI GOOGLE DRIVE ---
 try:
@@ -63,40 +65,54 @@ def get_announcements(service, parent_id):
         return []
 
 # --- TAMPILAN APLIKASI ---
+# Di sini kita pakai emoji untuk ikon di tab browser (karena harus emoji/file .ico)
 st.set_page_config(page_title=APP_NAME, page_icon="🏫", layout="wide")
 drive_service = get_drive_service()
 
-# --- SIDEBAR NAVIGASI (URUTAN BARU) ---
+# --- SIDEBAR NAVIGASI ---
 st.sidebar.title("Navigasi")
-
-# 1. Menu Tetap Atas (Hanya Beranda)
-main_menus = ["Beranda"]
-
-# 2. Menu Dinamis (Folder Drive)
+main_menus = ["🏠 Beranda"]
 st.sidebar.markdown("**📂 Kategori Materi:**")
 folders = get_folders(drive_service, PARENT_FOLDER_ID)
 folder_map = {f['name']: f['id'] for f in folders}
 folder_names = list(folder_map.keys())
-
-# 3. Menu Bawah (Admin & Keluar)
-# Perubahan: Area Admin dipindah ke sini agar ada di bawah
 footer_menus = ["🔐 Area Admin (Upload & Info)", "🚪 Keluar Aplikasi"]
-
-# Gabungkan Semua Menu: Beranda -> Folder -> Admin -> Keluar
 all_menus = main_menus + folder_names + footer_menus
 selected_menu = st.sidebar.radio("Pilih Halaman:", all_menus)
 
 st.sidebar.markdown("---")
 st.sidebar.caption(f"Dev: {CREATOR_NAME}")
-st.sidebar.caption("v4.1 (Reordered Menu)")
+st.sidebar.caption("v4.2 (Custom Logo)")
 
 # =========================================
 # HALAMAN 1: BERANDA
 # =========================================
-if selected_menu == "Beranda":
-    st.image(HEADER_IMAGE_URL, use_column_width=True)
-    st.title(f"🏫 Portal {APP_NAME}")
+if selected_menu == "🏠 Beranda":
+    # A. FOTO HEADER (Membaca file yang diupload ke GitHub)
+    try:
+        st.image(HEADER_IMAGE_FILE, use_column_width=True)
+    except:
+        # Pesan darurat jika lupa upload file header
+        st.warning(f"Gambar header '{HEADER_IMAGE_FILE}' belum ditemukan. Silakan upload ke GitHub.")
+
+    # B. JUDUL DENGAN LOGO KKG (Menggunakan Kolom)
+    try:
+        # Bagi area menjadi kolom kecil (1) dan besar (5)
+        col_logo, col_title = st.columns([1, 5])
+        with col_logo:
+            # Tampilkan Logo
+            st.image(LOGO_IMAGE_FILE, width=120) # Atur width agar ukuran pas
+        with col_title:
+            # Tampilkan Judul Teks (Vertikal di tengah)
+            st.markdown(f"# Portal {APP_NAME}")
+            st.markdown("### Aplikasi Berbagi Materi KKG")
+    except:
+         # Pesan darurat jika lupa upload file logo, tampilkan judul biasa
+         st.title(f"🏫 Portal {APP_NAME}")
+         st.caption("Logo belum diupload ke GitHub.")
     
+    # C. INFO PENGEMBANG
+    st.markdown("---")
     with st.expander("ℹ️ Info Pengembang & Status Aplikasi", expanded=False):
         c1, c2 = st.columns([2, 1])
         with c1:
@@ -107,6 +123,7 @@ if selected_menu == "Beranda":
             
     st.markdown("---")
 
+    # D. PENCARIAN
     st.subheader("🔍 Cari Dokumen")
     search_text = st.text_input("Ketik kata kunci dokumen...", placeholder="Contoh: RPP Kelas 1")
     
@@ -129,6 +146,7 @@ if selected_menu == "Beranda":
                 st.error("Gagal mencari.")
     
     st.markdown("---")
+    # E. PAPAN INFORMASI UPDATE
     st.subheader("📢 Papan Informasi Update")
     infos = get_announcements(drive_service, PARENT_FOLDER_ID)
     if infos:
@@ -145,8 +163,14 @@ if selected_menu == "Beranda":
 # =========================================
 elif selected_menu in folder_names:
     current_folder_id = folder_map[selected_menu]
-    st.title(f"📂 Kategori: {selected_menu}")
-    st.markdown(f"Daftar dokumen dalam folder **{selected_menu}**")
+    # Di halaman kategori juga kita pasang logo kecil
+    try:
+        c_log, c_tit = st.columns([0.5, 5])
+        with c_log: st.image(LOGO_IMAGE_FILE, width=60)
+        with c_tit: st.title(f"📂 {selected_menu}")
+    except:
+        st.title(f"📂 {selected_menu}")
+        
     st.markdown("---")
     
     try:
