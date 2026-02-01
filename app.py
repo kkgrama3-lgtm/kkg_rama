@@ -125,7 +125,7 @@ if selected_menu == "Beranda":
 
     # D. PENCARIAN
     st.subheader("🔍 Cari Dokumen")
-    search_text = st.text_input("Ketik kata kunci dokumen...", placeholder="Contoh: Modul Ajar Kelas 1")
+    search_text = st.text_input("Ketik kata kunci dokumen...", placeholder="Contoh: Modul 1")
     
     if search_text:
         with st.spinner("Mencari..."):
