@@ -17,7 +17,7 @@ LOGO_IMAGE_FILE = "Logo KKG Rama.png"
 # --- PENGATURAN ID FOLDER (PENTING!) ---
 # 1. PARENT_FOLDER_ID: Diambil dari secrets (Folder Utama Dokumen)
 # 2. INFO_FOLDER_ID: Masukkan ID Folder Khusus Info di bawah ini (Manual)
-INFO_FOLDER_ID = "153jOCfhplc22HZsZTNCypqxOjF1p" 
+INFO_FOLDER_ID = "153jOCfhplc22HZsZTNCypqxOjF1p_25m" 
 # Contoh: INFO_FOLDER_ID = "1KIqyTb7_xxxxxxxxx_yyyyyyyy"
 
 # --- KONFIGURASI GOOGLE DRIVE ---
