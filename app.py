@@ -16,9 +16,8 @@ LOGO_IMAGE_FILE = "Logo KKG Rama.png"
 
 # --- PENGATURAN ID FOLDER (PENTING!) ---
 # 1. PARENT_FOLDER_ID: Diambil dari secrets (Folder Utama Dokumen)
-# 2. INFO_FOLDER_ID: Masukkan ID Folder Khusus Info di bawah ini (Manual)
+# 2. INFO_FOLDER_ID: Folder Khusus Info
 INFO_FOLDER_ID = "153jOCfhplc22HZsZTNCypqxOjF1p_25m" 
-# Contoh: INFO_FOLDER_ID = "1KIqyTb7_xxxxxxxxx_yyyyyyyy"
 
 # --- KONFIGURASI GOOGLE DRIVE ---
 try:
@@ -62,7 +61,7 @@ def get_folders(service, parent_id):
 
 def get_announcements(service, folder_id_khusus):
     try:
-        # Sekarang mencari di folder_id_khusus, bukan parent utama
+        # Mencari di folder_id_khusus
         query = f"'{folder_id_khusus}' in parents and mimeType = 'text/plain' and trashed=false"
         results = service.files().list(
             q=query, fields="files(id, name, createdTime)", orderBy="createdTime desc",
@@ -112,7 +111,7 @@ selected_menu = st.sidebar.radio("Pilih Halaman:", all_menus)
 
 st.sidebar.markdown("---")
 st.sidebar.caption(f"Dev: {CREATOR_NAME}")
-st.sidebar.caption("v5.2 (Custom Info Folder)")
+st.sidebar.caption("v5.3 (Smart Fallback)")
 
 # =========================================
 # HALAMAN 1: BERANDA
@@ -159,11 +158,10 @@ if selected_menu == "Beranda":
                 except:
                     st.error("Terjadi kesalahan pencarian.")
         
-        # --- LOGIKA INFO TERBARU (Mengambil dari Folder Khusus) ---
+        # --- LOGIKA INFO TERBARU ---
         st.write("") 
         st.subheader("📢 Informasi Terbaru")
         
-        # Ambil info dari folder khusus INFO_FOLDER_ID
         infos = get_announcements(drive_service, INFO_FOLDER_ID)
         
         with st.container(height=300, border=True):
@@ -178,7 +176,7 @@ if selected_menu == "Beranda":
                     """, unsafe_allow_html=True)
             else:
                 if "MASUKKAN_ID" in INFO_FOLDER_ID:
-                    st.warning("⚠️ ID Folder Info belum disetting di script (Baris 17).")
+                    st.warning("⚠️ ID Folder Info belum disetting di script.")
                 else:
                     st.caption(f"Belum ada info di folder khusus ini.")
 
@@ -219,17 +217,19 @@ elif selected_menu in folder_names:
         st.error("Gagal memuat folder.")
 
 # =========================================
-# HALAMAN 3: AREA ADMIN
+# HALAMAN 3: AREA ADMIN (SMART FALLBACK)
 # =========================================
 elif selected_menu == "🔐 Area Admin (Upload Info)":
     st.title("🔐 Area Admin")
+    st.info("Fitur Upload Cerdas: Jika robot penuh, tombol manual akan muncul otomatis.")
+    
     password = st.text_input("Masukkan Password Admin:", type="password")
     
     if password == "admin123":
         st.success("Login Berhasil.")
         tab1, tab2 = st.tabs(["📤 Upload Materi", "📢 Tulis Info Beranda"])
         
-        # --- TAB 1: UPLOAD DOKUMEN (Masuk ke Folder Pilihan / Utama) ---
+        # --- TAB 1: UPLOAD DOKUMEN ---
         with tab1:
             st.subheader("Upload Dokumen")
             if folder_names:
@@ -244,18 +244,24 @@ elif selected_menu == "🔐 Area Admin (Upload Info)":
                 if uploaded_file:
                     with st.spinner("Mengupload..."):
                         try:
+                            # 1. Coba Upload Otomatis
                             file_metadata = {'name': uploaded_file.name, 'parents': [target_folder_id]}
                             media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
                             drive_service.files().create(body=file_metadata, media_body=media, supportsAllDrives=True).execute()
                             st.success("✅ Dokumen berhasil diupload!")
                         except Exception as e:
-                            st.error(f"Gagal: {e}")
+                            # 2. Jika Gagal (Kuota Penuh), Berikan Link Manual
+                            if "storageQuotaExceeded" in str(e):
+                                st.error("⚠️ Kuota Robot Penuh (Akun Gratis).")
+                                st.markdown("Jangan khawatir! Klik tombol di bawah untuk upload manual (File akan tetap muncul di aplikasi):")
+                                link_manual = f"https://drive.google.com/drive/u/0/folders/{target_folder_id}"
+                                st.link_button(f"📂 Upload ke {pilihan_folder} (Google Drive)", link_manual)
+                            else:
+                                st.error(f"Error: {e}")
 
-        # --- TAB 2: TULIS INFO (Masuk ke Folder KHUSUS INFO) ---
+        # --- TAB 2: TULIS INFO ---
         with tab2:
             st.subheader("Tulis Info Baru")
-            st.markdown(f"Info ini akan disimpan otomatis ke folder khusus (ID: `{INFO_FOLDER_ID[:5]}...`).")
-            
             judul_info = st.text_input("Judul Singkat:")
             isi_info = st.text_area("Isi Pengumuman:", height=100)
             
@@ -263,8 +269,8 @@ elif selected_menu == "🔐 Area Admin (Upload Info)":
                 if judul_info and isi_info:
                     with st.spinner("Menerbitkan..."):
                         try:
+                            # 1. Coba Tulis Otomatis
                             tanggal = datetime.now().strftime("%d-%m-%Y")
-                            # Simpan ke INFO_FOLDER_ID, bukan Parent Utama
                             file_metadata = {
                                 'name': f"[INFO] {tanggal} - {judul_info}.txt", 
                                 'parents': [INFO_FOLDER_ID], 
@@ -272,9 +278,22 @@ elif selected_menu == "🔐 Area Admin (Upload Info)":
                             }
                             media = MediaIoBaseUpload(io.BytesIO(isi_info.encode('utf-8')), mimetype='text/plain', resumable=True)
                             drive_service.files().create(body=file_metadata, media_body=media, supportsAllDrives=True).execute()
-                            st.success("✅ Info berhasil tampil di Beranda!")
+                            st.success("✅ Info berhasil diterbitkan!")
                         except Exception as e:
-                            st.error(f"Gagal: {e}")
+                            # 2. Jika Gagal (Kuota Penuh), Berikan Link Manual
+                            if "storageQuotaExceeded" in str(e):
+                                st.error("⚠️ Kuota Robot Penuh.")
+                                st.markdown("""
+                                **Solusi:**
+                                1. Klik tombol di bawah untuk membuka Folder Info.
+                                2. Buat **Google Docs** baru.
+                                3. Beri Judul: `[INFO] Judul Anda`.
+                                4. Tulis isinya di dalam dokumen tersebut.
+                                """)
+                                link_info = f"https://drive.google.com/drive/u/0/folders/{INFO_FOLDER_ID}"
+                                st.link_button("📂 Buka Folder Info (Google Drive)", link_info)
+                            else:
+                                st.error(f"Error: {e}")
     elif password != "":
         st.error("Password salah.")
 
