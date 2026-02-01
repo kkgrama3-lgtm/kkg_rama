@@ -187,7 +187,7 @@ if selected_menu == "Beranda":
         except: st.info("Foto header belum diupload.")
         
         with st.expander("ℹ️ Tentang Aplikasi", expanded=True):
-            st.caption(f"Aplikasi ini dikelola oleh **{CREATOR_NAME}, disupport oleh {CREATOR_CONTACT}.")
+            st.caption(f"Aplikasi ini dikelola oleh **{CREATOR_NAME}**, disupport oleh {CREATOR_CONTACT}.")
 
 # =========================================
 # HALAMAN 2: KATEGORI FOLDER
