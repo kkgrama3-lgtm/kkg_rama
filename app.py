@@ -101,11 +101,11 @@ if selected_menu == "Beranda":
         col_logo, col_title = st.columns([1, 14])
         with col_logo:
             # Tampilkan Logo
-            st.image(LOGO_IMAGE_FILE, width=60) # Atur width agar ukuran pas
+            st.image(LOGO_IMAGE_FILE, width=800) # Atur width agar ukuran pas
         with col_title:
             # Tampilkan Judul Teks (Vertikal di tengah)
-            st.markdown(f"## Portal {APP_NAME}")
-            st.markdown("###### Aplikasi Berbagi Materi KKG")
+            st.markdown(f"# {APP_NAME}")
+            st.markdown("##### Aplikasi Berbagi Materi KKG")
     except:
          # Pesan darurat jika lupa upload file logo, tampilkan judul biasa
          st.title(f"🏫 Portal {APP_NAME}")
