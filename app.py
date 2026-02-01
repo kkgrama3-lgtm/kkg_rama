@@ -72,7 +72,7 @@ drive_service = get_drive_service()
 # --- SIDEBAR NAVIGASI ---
 st.sidebar.title("Navigasi")
 main_menus = ["Beranda"]
-st.sidebar.markdown("**📂 Kategori Materi:**")
+st.sidebar.markdown("**📂 Daftar Isi:**")
 folders = get_folders(drive_service, PARENT_FOLDER_ID)
 folder_map = {f['name']: f['id'] for f in folders}
 folder_names = list(folder_map.keys())
@@ -117,7 +117,7 @@ if selected_menu == "Beranda":
         c1, c2 = st.columns([2, 1])
         with c1:
             st.markdown(f"**Pengelola:** {CREATOR_NAME}")
-            st.caption(f"Kontak: {CREATOR_CONTACT}")
+            st.caption(f"Support by: {CREATOR_CONTACT}")
         with c2:
             st.metric("Status Database", "Online 🟢")
             
