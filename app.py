@@ -71,7 +71,7 @@ drive_service = get_drive_service()
 
 # --- SIDEBAR NAVIGASI ---
 st.sidebar.title("Navigasi")
-main_menus = ["🏠 Beranda"]
+main_menus = ["Beranda"]
 st.sidebar.markdown("**📂 Kategori Materi:**")
 folders = get_folders(drive_service, PARENT_FOLDER_ID)
 folder_map = {f['name']: f['id'] for f in folders}
@@ -87,7 +87,7 @@ st.sidebar.caption("v4.2 (Custom Logo)")
 # =========================================
 # HALAMAN 1: BERANDA
 # =========================================
-if selected_menu == "🏠 Beranda":
+if selected_menu == "Beranda":
     # A. FOTO HEADER (Membaca file yang diupload ke GitHub)
     try:
         st.image(HEADER_IMAGE_FILE, use_column_width=True)
@@ -125,7 +125,7 @@ if selected_menu == "🏠 Beranda":
 
     # D. PENCARIAN
     st.subheader("🔍 Cari Dokumen")
-    search_text = st.text_input("Ketik kata kunci dokumen...", placeholder="Contoh: RPP Kelas 1")
+    search_text = st.text_input("Ketik kata kunci dokumen...", placeholder="Contoh: Modul Ajar Kelas 1")
     
     if search_text:
         with st.spinner("Mencari..."):
