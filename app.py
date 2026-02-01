@@ -135,8 +135,8 @@ if selected_menu == "Beranda":
         except:
             st.warning("Logo hilang")
     with col_header_2:
-        st.markdown(f'<h1 class="main-title">PORTAL {APP_NAME}</h1>', unsafe_allow_html=True)
-        st.markdown('<p class="sub-title">Wadah Berbagi Materi & Informasi Terkini</p>', unsafe_allow_html=True)
+        st.markdown(f'<h1 class="main-title"> {APP_NAME}</h1>', unsafe_allow_html=True)
+        st.markdown('<p class="sub-title"> Berbagi Materi & Informasi </p>', unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -198,7 +198,7 @@ if selected_menu == "Beranda":
             st.info("Foto header belum diupload.")
         
         with st.expander("ℹ️ Tentang Aplikasi", expanded=True):
-            st.caption(f"Aplikasi ini dikelola oleh **{CREATOR_NAME}** untuk mempermudah distribusi file KKG.")
+            st.caption(f"Aplikasi ini dikelola oleh **{CREATOR_NAME}**, disupport oleh Pengurus KKG 2026-2030.")
             st.caption("Gunakan menu di samping kiri (atau pojok kiri atas di HP) untuk masuk ke folder.")
 
 # =========================================
