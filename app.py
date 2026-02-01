@@ -98,14 +98,14 @@ if selected_menu == "Beranda":
     # B. JUDUL DENGAN LOGO KKG (Menggunakan Kolom)
     try:
         # Bagi area menjadi kolom kecil (1) dan besar (5)
-        col_logo, col_title = st.columns([1, 5])
+        col_logo, col_title = st.columns([1, 10])
         with col_logo:
             # Tampilkan Logo
-            st.image(LOGO_IMAGE_FILE, width=100) # Atur width agar ukuran pas
+            st.image(LOGO_IMAGE_FILE, width=140) # Atur width agar ukuran pas
         with col_title:
             # Tampilkan Judul Teks (Vertikal di tengah)
             st.markdown(f"# Portal {APP_NAME}")
-            st.markdown("#### Aplikasi Berbagi Materi KKG")
+            st.markdown("## Aplikasi Berbagi Materi KKG")
     except:
          # Pesan darurat jika lupa upload file logo, tampilkan judul biasa
          st.title(f"🏫 Portal {APP_NAME}")
