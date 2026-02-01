@@ -101,7 +101,7 @@ if selected_menu == "Beranda":
         col_logo, col_title = st.columns([1, 10])
         with col_logo:
             # Tampilkan Logo
-            st.image(LOGO_IMAGE_FILE, width=140) # Atur width agar ukuran pas
+            st.image(LOGO_IMAGE_FILE, width=80) # Atur width agar ukuran pas
         with col_title:
             # Tampilkan Judul Teks (Vertikal di tengah)
             st.markdown(f"## Portal {APP_NAME}")
