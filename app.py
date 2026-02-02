@@ -73,10 +73,13 @@ def get_announcements(service, folder_id_khusus):
     except:
         return []
 
-# --- CSS KHUSUS (MOBILE OPTIMIZED) ---
+# --- CSS KHUSUS (MOBILE OPTIMIZED & CLEAN LAYOUT) ---
 def local_css():
     st.markdown("""
     <style>
+        /* Sembunyikan Footer Bawaan Streamlit (Agar Bersih) */
+        footer {visibility: hidden;}
+        
         /* Gambar Header */
         img { border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
@@ -87,12 +90,12 @@ def local_css():
         /* Info Box */
         .info-box { background-color: #f0f9ff; border-left: 5px solid #0ea5e9; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
         
-        /* TOMBOL APUNG (FLOATING BUTTON) UNTUK SCROLL KE ATAS */
+        /* TOMBOL APUNG (DIGESER KE ATAS) */
         .floating-top-btn {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 99;
+            bottom: 90px; /* Naik 90px agar aman dari jempol/logo */
+            right: 25px;
+            z-index: 999; /* Pastikan selalu di paling atas layer */
             background-color: #1E3A8A;
             color: white;
             border-radius: 50%;
@@ -101,13 +104,19 @@ def local_css():
             text-align: center;
             line-height: 50px;
             font-size: 24px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.3); /* Shadow lebih lembut */
             text-decoration: none;
-            transition: background 0.3s;
+            transition: all 0.3s ease;
+            opacity: 0.9; /* Sedikit transparan agar estetik */
         }
-        .floating-top-btn:hover { background-color: #0ea5e9; color: white; }
+        .floating-top-btn:hover { 
+            background-color: #0ea5e9; 
+            color: white; 
+            transform: translateY(-3px); /* Efek naik dikit saat disentuh */
+            opacity: 1;
+        }
         
-        /* TOMBOL BUKA YANG LEBIH KUAT DI HP */
+        /* TOMBOL BUKA CUSTOM */
         .custom-link-btn {
             display: inline-block;
             background-color: #ffffff;
@@ -127,17 +136,16 @@ def local_css():
     </style>
     """, unsafe_allow_html=True)
     
-    # Masukkan Anchor di Paling Atas Halaman
+    # Anchor Top
     st.markdown('<div id="top-page"></div>', unsafe_allow_html=True)
-    # Masukkan Tombol Floating
+    # Tombol Floating
     st.markdown('<a href="#top-page" class="floating-top-btn">⬆️</a>', unsafe_allow_html=True)
 
-# --- FUNGSI TAMPILAN ITEM (AGAR KONSISTEN) ---
+# --- FUNGSI TAMPILAN ITEM ---
 def render_file_item(name, link, mime_type):
-    # Menentukan Ikon
     if mime_type == 'application/vnd.google-apps.folder':
         icon = "📁"
-        bg_color = "#fffbf0" # Sedikit kuning untuk folder
+        bg_color = "#fffbf0"
     elif "pdf" in mime_type:
         icon = "📕"
         bg_color = "white"
@@ -151,7 +159,6 @@ def render_file_item(name, link, mime_type):
         icon = "📄"
         bg_color = "white"
 
-    # Layout Custom HTML agar tombol responsif di HP
     st.markdown(f"""
     <div style="background-color: {bg_color}; padding: 10px; border-radius: 10px; border: 1px solid #eee; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
         <div style="flex-grow: 1; padding-right: 10px;">
@@ -183,7 +190,7 @@ all_menus = main_menus + folder_names + footer_menus
 selected_menu = st.sidebar.radio("Pilih Halaman:", all_menus)
 
 st.sidebar.markdown("---")
-st.sidebar.caption("v5.4 (Mobile Friendly & Deep Search)")
+st.sidebar.caption("v5.5 (Clean Layout)")
 
 # =========================================
 # HALAMAN 1: BERANDA
@@ -211,21 +218,17 @@ if selected_menu == "Beranda":
         if search_text:
             with st.spinner("Mencari di seluruh folder..."):
                 try:
-                    # FIX 1: PENCARIAN MENDALAM (Hapus 'PARENT_FOLDER_ID in parents')
-                    # Sekarang mencari file apapun yang mengandung kata kunci di seluruh drive yang bisa dilihat Robot
                     query = f"name contains '{search_text}' and trashed=false and mimeType != 'application/vnd.google-apps.folder'"
-                    
                     results = drive_service.files().list(
                         q=query, fields="files(id, name, webViewLink, mimeType)",
                         supportsAllDrives=True, includeItemsFromAllDrives=True,
-                        pageSize=20 # Batasi 20 hasil agar cepat
+                        pageSize=20
                     ).execute()
                     items = results.get('files', [])
                     
                     if items:
                         st.success(f"Ditemukan {len(items)} hasil:")
                         for item in items:
-                            # Gunakan render custom yang tombolnya kuat
                             render_file_item(item['name'], item['webViewLink'], item['mimeType'])
                     else:
                         st.warning("Tidak ditemukan. Coba kata kunci lain.")
@@ -250,7 +253,7 @@ if selected_menu == "Beranda":
         except: pass
         
         with st.expander("ℹ️ Tentang Aplikasi"):
-            st.caption(f"Dikelola oleh **{CREATOR_NAME}**.")
+            st.caption(f"Dikelola oleh **{CREATOR_NAME}**, disupport oleh {CREATOR_CONTACT}.")
 
 # =========================================
 # HALAMAN 2: KATEGORI FOLDER
@@ -269,7 +272,6 @@ elif selected_menu in folder_names:
         
         if items:
             for item in items:
-                # FIX 2: TOMBOL BUKA YANG LEBIH RESPONSIF
                 render_file_item(item['name'], item['webViewLink'], item['mimeType'])
         else:
             st.info("Folder ini kosong.")
