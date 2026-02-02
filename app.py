@@ -14,9 +14,7 @@ CREATOR_CONTACT = "Pengurus KKG Rama 2026-2030"
 HEADER_IMAGE_FILE = "Foto Bareng KKG.jpg" 
 LOGO_IMAGE_FILE = "Logo KKG Rama.png"
 
-# --- PENGATURAN ID FOLDER (PENTING!) ---
-# 1. PARENT_FOLDER_ID: Diambil dari secrets (Folder Utama Dokumen)
-# 2. INFO_FOLDER_ID: Folder Khusus Info
+# --- PENGATURAN ID FOLDER ---
 INFO_FOLDER_ID = "153jOCfhplc22HZsZTNCypqxOjF1p_25m" 
 
 # --- KONFIGURASI GOOGLE DRIVE ---
@@ -25,7 +23,6 @@ try:
     if "?" in PARENT_FOLDER_ID:
         PARENT_FOLDER_ID = PARENT_FOLDER_ID.split("?")[0]
         
-    # Jika INFO_FOLDER_ID belum diisi user, gunakan Folder Utama sebagai cadangan
     if "MASUKKAN_ID" in INFO_FOLDER_ID:
         INFO_FOLDER_ID = PARENT_FOLDER_ID
         
@@ -40,7 +37,6 @@ def authenticate():
         creds_dict, scopes=SCOPES)
     return build('drive', 'v3', credentials=creds)
 
-# --- FUNGSI BANTUAN ---
 def get_drive_service():
     try:
         return authenticate()
@@ -61,7 +57,6 @@ def get_folders(service, parent_id):
 
 def get_announcements(service, folder_id_khusus):
     try:
-        # Mencari di folder_id_khusus
         query = f"'{folder_id_khusus}' in parents and mimeType = 'text/plain' and trashed=false"
         results = service.files().list(
             q=query, fields="files(id, name, createdTime)", orderBy="createdTime desc",
@@ -70,9 +65,7 @@ def get_announcements(service, folder_id_khusus):
         files = results.get('files', [])
         announcements = []
         for file in files:
-            # Baca isi file teks
             request = service.files().get_media(fileId=file['id'])
-            fh = io.BytesIO()
             downloader = request.execute()
             content = downloader.decode('utf-8')
             announcements.append({"title": file['name'], "content": content, "id": file['id']})
@@ -80,18 +73,98 @@ def get_announcements(service, folder_id_khusus):
     except:
         return []
 
-# --- CSS KHUSUS AGAR TAMPILAN ELEGAN ---
+# --- CSS KHUSUS (MOBILE OPTIMIZED) ---
 def local_css():
     st.markdown("""
     <style>
+        /* Gambar Header */
         img { border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .main-title { font-size: 2.5rem; font-weight: 700; color: #1E3A8A; margin-bottom: 0; }
-        .sub-title { font-size: 1.2rem; color: #555; margin-top: -10px; }
+        
+        /* Judul */
+        .main-title { font-size: 2.2rem; font-weight: 700; color: #1E3A8A; margin-bottom: 0; }
+        .sub-title { font-size: 1rem; color: #555; margin-top: -5px; }
+        
+        /* Info Box */
         .info-box { background-color: #f0f9ff; border-left: 5px solid #0ea5e9; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
+        
+        /* TOMBOL APUNG (FLOATING BUTTON) UNTUK SCROLL KE ATAS */
+        .floating-top-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 99;
+            background-color: #1E3A8A;
+            color: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            line-height: 50px;
+            font-size: 24px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+        .floating-top-btn:hover { background-color: #0ea5e9; color: white; }
+        
+        /* TOMBOL BUKA YANG LEBIH KUAT DI HP */
+        .custom-link-btn {
+            display: inline-block;
+            background-color: #ffffff;
+            color: #1E3A8A;
+            padding: 5px 15px;
+            border-radius: 8px;
+            border: 1px solid #1E3A8A;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .custom-link-btn:hover {
+            background-color: #1E3A8A;
+            color: white;
+        }
     </style>
     """, unsafe_allow_html=True)
+    
+    # Masukkan Anchor di Paling Atas Halaman
+    st.markdown('<div id="top-page"></div>', unsafe_allow_html=True)
+    # Masukkan Tombol Floating
+    st.markdown('<a href="#top-page" class="floating-top-btn">⬆️</a>', unsafe_allow_html=True)
 
-# --- TAMPILAN APLIKASI ---
+# --- FUNGSI TAMPILAN ITEM (AGAR KONSISTEN) ---
+def render_file_item(name, link, mime_type):
+    # Menentukan Ikon
+    if mime_type == 'application/vnd.google-apps.folder':
+        icon = "📁"
+        bg_color = "#fffbf0" # Sedikit kuning untuk folder
+    elif "pdf" in mime_type:
+        icon = "📕"
+        bg_color = "white"
+    elif "word" in mime_type or "document" in mime_type:
+        icon = "📘"
+        bg_color = "white"
+    elif "sheet" in mime_type or "excel" in mime_type:
+        icon = "📗"
+        bg_color = "white"
+    else:
+        icon = "📄"
+        bg_color = "white"
+
+    # Layout Custom HTML agar tombol responsif di HP
+    st.markdown(f"""
+    <div style="background-color: {bg_color}; padding: 10px; border-radius: 10px; border: 1px solid #eee; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="flex-grow: 1; padding-right: 10px;">
+            <span style="font-size: 1.2rem;">{icon}</span> 
+            <span style="font-weight: 500; color: #333;">{name}</span>
+        </div>
+        <div>
+            <a href="{link}" target="_blank" class="custom-link-btn">Buka</a>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# --- INIT ---
 st.set_page_config(page_title=APP_NAME, page_icon="🏫", layout="wide")
 local_css()
 drive_service = get_drive_service()
@@ -110,8 +183,7 @@ all_menus = main_menus + folder_names + footer_menus
 selected_menu = st.sidebar.radio("Pilih Halaman:", all_menus)
 
 st.sidebar.markdown("---")
-st.sidebar.caption(f"Dev: {CREATOR_NAME}")
-st.sidebar.caption("v5.3 (Smart Fallback)")
+st.sidebar.caption("v5.4 (Mobile Friendly & Deep Search)")
 
 # =========================================
 # HALAMAN 1: BERANDA
@@ -119,11 +191,11 @@ st.sidebar.caption("v5.3 (Smart Fallback)")
 if selected_menu == "Beranda":
     
     # Header
-    col_header_1, col_header_2 = st.columns([1, 6])
-    with col_header_1:
-        try: st.image(LOGO_IMAGE_FILE, width=100)
-        except: st.warning("Logo hilang")
-    with col_header_2:
+    c1, c2 = st.columns([1, 6])
+    with c1:
+        try: st.image(LOGO_IMAGE_FILE, width=90)
+        except: st.warning("Logo?")
+    with c2:
         st.markdown(f'<h1 class="main-title"> {APP_NAME}</h1>', unsafe_allow_html=True)
         st.markdown('<p class="sub-title"> Berbagi Materi & Informasi </p>', unsafe_allow_html=True)
 
@@ -134,58 +206,51 @@ if selected_menu == "Beranda":
     
     with col_left:
         st.subheader("🔍 Cari Dokumen")
-        search_text = st.text_input("Ketik kata kunci...", placeholder="Contoh: Modul Ajar, Undangan", label_visibility="collapsed")
+        search_text = st.text_input("Ketik kata kunci...", placeholder="Contoh: Modul, Undangan, RPP", label_visibility="collapsed")
         
         if search_text:
-            with st.spinner("Mencari..."):
+            with st.spinner("Mencari di seluruh folder..."):
                 try:
-                    # Mencari di folder utama (Parent)
-                    query = f"'{PARENT_FOLDER_ID}' in parents and name contains '{search_text}' and trashed=false and mimeType != 'application/vnd.google-apps.folder'"
+                    # FIX 1: PENCARIAN MENDALAM (Hapus 'PARENT_FOLDER_ID in parents')
+                    # Sekarang mencari file apapun yang mengandung kata kunci di seluruh drive yang bisa dilihat Robot
+                    query = f"name contains '{search_text}' and trashed=false and mimeType != 'application/vnd.google-apps.folder'"
+                    
                     results = drive_service.files().list(
-                        q=query, fields="files(id, name, webViewLink)",
-                        supportsAllDrives=True, includeItemsFromAllDrives=True
+                        q=query, fields="files(id, name, webViewLink, mimeType)",
+                        supportsAllDrives=True, includeItemsFromAllDrives=True,
+                        pageSize=20 # Batasi 20 hasil agar cepat
                     ).execute()
                     items = results.get('files', [])
+                    
                     if items:
                         st.success(f"Ditemukan {len(items)} hasil:")
                         for item in items:
-                            c_a, c_b = st.columns([5, 2])
-                            c_a.markdown(f"📄 **{item['name']}**")
-                            c_b.link_button("⬇️ Unduh", item['webViewLink'])
-                            st.divider()
+                            # Gunakan render custom yang tombolnya kuat
+                            render_file_item(item['name'], item['webViewLink'], item['mimeType'])
                     else:
-                        st.warning("Tidak ditemukan (Pastikan file ada di Folder Utama, bukan Sub-folder).")
-                except:
-                    st.error("Terjadi kesalahan pencarian.")
+                        st.warning("Tidak ditemukan. Coba kata kunci lain.")
+                except Exception as e:
+                    st.error(f"Error pencarian: {e}")
         
-        # --- LOGIKA INFO TERBARU ---
+        # --- INFO TERBARU ---
         st.write("") 
         st.subheader("📢 Informasi Terbaru")
-        
         infos = get_announcements(drive_service, INFO_FOLDER_ID)
         
         with st.container(height=300, border=True):
             if infos:
                 for info in infos:
                     judul_bersih = info['title'].replace(".txt", "").replace("[INFO] ", "")
-                    st.markdown(f"""
-                    <div class="info-box">
-                        <strong>🗓️ {judul_bersih}</strong><br>
-                        {info['content']}
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"""<div class="info-box"><strong>🗓️ {judul_bersih}</strong><br>{info['content']}</div>""", unsafe_allow_html=True)
             else:
-                if "MASUKKAN_ID" in INFO_FOLDER_ID:
-                    st.warning("⚠️ ID Folder Info belum disetting di script.")
-                else:
-                    st.caption(f"Belum ada info di folder khusus ini.")
+                st.caption("Belum ada info terbaru.")
 
     with col_right:
         try: st.image(HEADER_IMAGE_FILE, use_column_width=True, caption="Keluarga Besar KKG Rama")
-        except: st.info("Foto header belum diupload.")
+        except: pass
         
-        with st.expander("ℹ️ Tentang Aplikasi", expanded=True):
-            st.caption(f"Aplikasi ini dikelola oleh **{CREATOR_NAME}**, disupport oleh {CREATOR_CONTACT}.")
+        with st.expander("ℹ️ Tentang Aplikasi"):
+            st.caption(f"Dikelola oleh **{CREATOR_NAME}**.")
 
 # =========================================
 # HALAMAN 2: KATEGORI FOLDER
@@ -204,20 +269,15 @@ elif selected_menu in folder_names:
         
         if items:
             for item in items:
-                with st.container():
-                    c1, c2 = st.columns([5, 1])
-                    with c1:
-                        icon = "📁" if item['mimeType'] == 'application/vnd.google-apps.folder' else "📄"
-                        st.markdown(f"{icon} **{item['name']}**")
-                    with c2: st.link_button("Buka", item['webViewLink'])
-                    st.divider()
+                # FIX 2: TOMBOL BUKA YANG LEBIH RESPONSIF
+                render_file_item(item['name'], item['webViewLink'], item['mimeType'])
         else:
             st.info("Folder ini kosong.")
     except:
         st.error("Gagal memuat folder.")
 
 # =========================================
-# HALAMAN 3: AREA ADMIN (SMART FALLBACK)
+# HALAMAN 3: AREA ADMIN
 # =========================================
 elif selected_menu == "🔐 Area Admin (Upload Info)":
     st.title("🔐 Area Admin")
@@ -229,7 +289,7 @@ elif selected_menu == "🔐 Area Admin (Upload Info)":
         st.success("Login Berhasil.")
         tab1, tab2 = st.tabs(["📤 Upload Materi", "📢 Tulis Info Beranda"])
         
-        # --- TAB 1: UPLOAD DOKUMEN ---
+        # --- TAB 1: UPLOAD ---
         with tab1:
             st.subheader("Upload Dokumen")
             if folder_names:
@@ -237,29 +297,25 @@ elif selected_menu == "🔐 Area Admin (Upload Info)":
                 target_folder_id = folder_map[pilihan_folder]
             else:
                 target_folder_id = PARENT_FOLDER_ID
-                
-            uploaded_file = st.file_uploader("Pilih file (PDF/Word/Excel):")
             
+            uploaded_file = st.file_uploader("Pilih file:")
             if st.button("🚀 Upload Dokumen"):
                 if uploaded_file:
                     with st.spinner("Mengupload..."):
                         try:
-                            # 1. Coba Upload Otomatis
                             file_metadata = {'name': uploaded_file.name, 'parents': [target_folder_id]}
                             media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
                             drive_service.files().create(body=file_metadata, media_body=media, supportsAllDrives=True).execute()
-                            st.success("✅ Dokumen berhasil diupload!")
+                            st.success("✅ Berhasil!")
                         except Exception as e:
-                            # 2. Jika Gagal (Kuota Penuh), Berikan Link Manual
                             if "storageQuotaExceeded" in str(e):
-                                st.error("⚠️ Kuota Robot Penuh (Akun Gratis).")
-                                st.markdown("Jangan khawatir! Klik tombol di bawah untuk upload manual (File akan tetap muncul di aplikasi):")
+                                st.error("⚠️ Kuota Robot Penuh.")
                                 link_manual = f"https://drive.google.com/drive/u/0/folders/{target_folder_id}"
-                                st.link_button(f"📂 Upload ke {pilihan_folder} (Google Drive)", link_manual)
+                                st.link_button(f"📂 Upload ke {pilihan_folder} (Manual)", link_manual)
                             else:
                                 st.error(f"Error: {e}")
 
-        # --- TAB 2: TULIS INFO ---
+        # --- TAB 2: INFO ---
         with tab2:
             st.subheader("Tulis Info Baru")
             judul_info = st.text_input("Judul Singkat:")
@@ -269,29 +325,16 @@ elif selected_menu == "🔐 Area Admin (Upload Info)":
                 if judul_info and isi_info:
                     with st.spinner("Menerbitkan..."):
                         try:
-                            # 1. Coba Tulis Otomatis
                             tanggal = datetime.now().strftime("%d-%m-%Y")
-                            file_metadata = {
-                                'name': f"[INFO] {tanggal} - {judul_info}.txt", 
-                                'parents': [INFO_FOLDER_ID], 
-                                'mimeType': 'text/plain'
-                            }
+                            file_metadata = {'name': f"[INFO] {tanggal} - {judul_info}.txt", 'parents': [INFO_FOLDER_ID], 'mimeType': 'text/plain'}
                             media = MediaIoBaseUpload(io.BytesIO(isi_info.encode('utf-8')), mimetype='text/plain', resumable=True)
                             drive_service.files().create(body=file_metadata, media_body=media, supportsAllDrives=True).execute()
-                            st.success("✅ Info berhasil diterbitkan!")
+                            st.success("✅ Berhasil!")
                         except Exception as e:
-                            # 2. Jika Gagal (Kuota Penuh), Berikan Link Manual
                             if "storageQuotaExceeded" in str(e):
                                 st.error("⚠️ Kuota Robot Penuh.")
-                                st.markdown("""
-                                **Solusi:**
-                                1. Klik tombol di bawah untuk membuka Folder Info.
-                                2. Buat **Google Docs** baru.
-                                3. Beri Judul: `[INFO] Judul Anda`.
-                                4. Tulis isinya di dalam dokumen tersebut.
-                                """)
                                 link_info = f"https://drive.google.com/drive/u/0/folders/{INFO_FOLDER_ID}"
-                                st.link_button("📂 Buka Folder Info (Google Drive)", link_info)
+                                st.link_button("📂 Buka Folder Info (Manual)", link_info)
                             else:
                                 st.error(f"Error: {e}")
     elif password != "":
