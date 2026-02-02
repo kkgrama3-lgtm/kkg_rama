@@ -77,7 +77,7 @@ def get_announcements(service, folder_id_khusus):
 def local_css():
     st.markdown("""
     <style>
-        /* Sembunyikan Footer Bawaan Streamlit (Agar Bersih) */
+        /* Sembunyikan Footer Bawaan Streamlit */
         footer {visibility: hidden;}
         
         /* Gambar Header */
@@ -90,12 +90,12 @@ def local_css():
         /* Info Box */
         .info-box { background-color: #f0f9ff; border-left: 5px solid #0ea5e9; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
         
-        /* TOMBOL APUNG (DIGESER KE ATAS) */
+        /* TOMBOL APUNG (LEBIH AMAN DIGESER KE ATAS) */
         .floating-top-btn {
             position: fixed;
-            bottom: 70px; /* Naik 90px agar aman dari jempol/logo */
-            right: 25px;
-            z-index: 999; /* Pastikan selalu di paling atas layer */
+            bottom: 100px; 
+            right: 20px;
+            z-index: 999;
             background-color: #1E3A8A;
             color: white;
             border-radius: 50%;
@@ -104,72 +104,47 @@ def local_css():
             text-align: center;
             line-height: 50px;
             font-size: 24px;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.3); /* Shadow lebih lembut */
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
             text-decoration: none;
             transition: all 0.3s ease;
-            opacity: 0.9; /* Sedikit transparan agar estetik */
+            opacity: 0.8;
         }
         .floating-top-btn:hover { 
             background-color: #0ea5e9; 
-            color: white; 
-            transform: translateY(-3px); /* Efek naik dikit saat disentuh */
             opacity: 1;
-        }
-        
-        /* TOMBOL BUKA CUSTOM */
-        .custom-link-btn {
-            display: inline-block;
-            background-color: #ffffff;
-            color: #1E3A8A;
-            padding: 5px 15px;
-            border-radius: 8px;
-            border: 1px solid #1E3A8A;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-align: center;
-        }
-        .custom-link-btn:hover {
-            background-color: #1E3A8A;
-            color: white;
         }
     </style>
     """, unsafe_allow_html=True)
     
-    # Anchor Top
+    # Anchor Top & Floating Button
     st.markdown('<div id="top-page"></div>', unsafe_allow_html=True)
-    # Tombol Floating
     st.markdown('<a href="#top-page" class="floating-top-btn">⬆️</a>', unsafe_allow_html=True)
 
-# --- FUNGSI TAMPILAN ITEM ---
+# --- FUNGSI TAMPILAN ITEM (NATIVE STREAMLIT FIX) ---
 def render_file_item(name, link, mime_type):
+    # Menentukan Ikon
     if mime_type == 'application/vnd.google-apps.folder':
         icon = "📁"
-        bg_color = "#fffbf0"
     elif "pdf" in mime_type:
         icon = "📕"
-        bg_color = "white"
     elif "word" in mime_type or "document" in mime_type:
         icon = "📘"
-        bg_color = "white"
     elif "sheet" in mime_type or "excel" in mime_type:
         icon = "📗"
-        bg_color = "white"
     else:
         icon = "📄"
-        bg_color = "white"
 
-    st.markdown(f"""
-    <div style="background-color: {bg_color}; padding: 10px; border-radius: 10px; border: 1px solid #eee; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
-        <div style="flex-grow: 1; padding-right: 10px;">
-            <span style="font-size: 1.2rem;">{icon}</span> 
-            <span style="font-weight: 500; color: #333;">{name}</span>
-        </div>
-        <div>
-            <a href="{link}" target="_blank" class="custom-link-btn">Buka</a>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # GUNAKAN CONTAINER ASLI STREAMLIT (Lebih Responsif di HP)
+    with st.container(border=True):
+        col_text, col_btn = st.columns([3, 1])
+        
+        with col_text:
+            st.markdown(f"**{icon} {name}**")
+            
+        with col_btn:
+            # use_container_width=True membuat tombol PENUH satu kolom
+            # Ini sangat membantu di HP agar area sentuh luas
+            st.link_button("Buka", link, type="primary", use_container_width=True)
 
 # --- INIT ---
 st.set_page_config(page_title=APP_NAME, page_icon="🏫", layout="wide")
@@ -190,7 +165,7 @@ all_menus = main_menus + folder_names + footer_menus
 selected_menu = st.sidebar.radio("Pilih Halaman:", all_menus)
 
 st.sidebar.markdown("---")
-st.sidebar.caption("v5.5 (Clean Layout)")
+st.sidebar.caption("v5.6 (Native Mobile Fix)")
 
 # =========================================
 # HALAMAN 1: BERANDA
@@ -253,7 +228,7 @@ if selected_menu == "Beranda":
         except: pass
         
         with st.expander("ℹ️ Tentang Aplikasi"):
-            st.caption(f"Dikelola oleh **{CREATOR_NAME}**, disupport oleh {CREATOR_CONTACT}.")
+            st.caption(f"Dikelola oleh **{CREATOR_NAME}**.")
 
 # =========================================
 # HALAMAN 2: KATEGORI FOLDER
