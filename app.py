@@ -90,7 +90,7 @@ def local_css():
         /* Info Box */
         .info-box { background-color: #f0f9ff; border-left: 5px solid #0ea5e9; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
         
-        /* TOMBOL APUNG */
+        /* TOMBOL APUNG (DIGESER KE ATAS) */
         .floating-top-btn {
             position: fixed;
             bottom: 70px; 
@@ -104,7 +104,7 @@ def local_css():
             text-align: center;
             line-height: 50px;
             font-size: 24px;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.3); 
             text-decoration: none;
             transition: all 0.3s ease;
             opacity: 0.9;
@@ -116,7 +116,7 @@ def local_css():
             opacity: 1;
         }
         
-        /* TOMBOL BUKA CUSTOM */
+        /* TOMBOL BUKA CUSTOM (STYLE V5.5) */
         .custom-link-btn {
             display: inline-block;
             background-color: #ffffff;
@@ -136,7 +136,9 @@ def local_css():
     </style>
     """, unsafe_allow_html=True)
     
+    # Anchor Top
     st.markdown('<div id="top-page"></div>', unsafe_allow_html=True)
+    # Tombol Floating
     st.markdown('<a href="#top-page" class="floating-top-btn">⬆️</a>', unsafe_allow_html=True)
 
 # --- FUNGSI TAMPILAN ITEM ---
@@ -169,12 +171,16 @@ def render_file_item(name, link, mime_type):
     </div>
     """, unsafe_allow_html=True)
 
-# --- INIT ---
+# --- INIT & SESSION STATE (FIX NAVIGASI) ---
 st.set_page_config(page_title=APP_NAME, page_icon="🏫", layout="wide")
 local_css()
 drive_service = get_drive_service()
 
-# --- SIDEBAR NAVIGASI ---
+# Inisialisasi status halaman jika belum ada
+if 'halaman_aktif' not in st.session_state:
+    st.session_state.halaman_aktif = "Beranda"
+
+# --- SIDEBAR NAVIGASI (DENGAN LOGIKA BARU) ---
 st.sidebar.title("Navigasi")
 main_menus = ["Beranda"]
 st.sidebar.markdown("**📂 Daftar Isi:**")
@@ -186,11 +192,26 @@ folder_names = list(folder_map.keys())
 footer_menus = ["🔐 Area Admin (Upload Info)", "🚪 Keluar Aplikasi"]
 all_menus = main_menus + folder_names + footer_menus
 
-# FIX: Menambahkan key 'nav_key' agar bisa diubah dari tombol lain
-selected_menu = st.sidebar.radio("Pilih Halaman:", all_menus, key="nav_key")
+# Fungsi untuk sinkronisasi pilihan sidebar dengan session state
+def update_nav():
+    st.session_state.halaman_aktif = st.session_state.nav_radio
+
+# Menentukan index default berdasarkan session state
+try:
+    default_index = all_menus.index(st.session_state.halaman_aktif)
+except:
+    default_index = 0
+
+selected_menu = st.sidebar.radio(
+    "Pilih Halaman:", 
+    all_menus, 
+    index=default_index, 
+    key="nav_radio", 
+    on_change=update_nav
+)
 
 st.sidebar.markdown("---")
-st.sidebar.caption("v5.6 (Fix Tombol Masuk)")
+st.sidebar.caption("v5.6 (Final Fix)")
 
 # =========================================
 # HALAMAN 1: BERANDA
@@ -343,14 +364,14 @@ elif selected_menu == "🔐 Area Admin (Upload Info)":
         st.error("Password salah.")
 
 # =========================================
-# HALAMAN 4: KELUAR (DIPERBAIKI)
+# HALAMAN 4: KELUAR (FIXED)
 # =========================================
 elif selected_menu == "🚪 Keluar Aplikasi":
-    st.markdown("### Anda telah keluar.")
+    st.markdown("### 👋 Anda telah keluar.")
+    st.markdown("Terima kasih telah menggunakan aplikasi ini.")
+    st.divider()
     
-    # Fungsi Callback untuk mereset Sidebar ke Beranda
-    def kembali_ke_beranda():
-        st.session_state.nav_key = "Beranda"
-
-    # Tombol menggunakan on_click, BUKAN if button:
-    st.button("Masuk Kembali", on_click=kembali_ke_beranda)
+    # Tombol ini sekarang berfungsi memaksa navigasi balik ke Beranda
+    if st.button("🔙 Masuk Kembali Ke Beranda"):
+        st.session_state.halaman_aktif = "Beranda"
+        st.rerun()
