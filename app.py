@@ -93,7 +93,7 @@ def local_css():
         /* TOMBOL APUNG (DIGESER KE ATAS) */
         .floating-top-btn {
             position: fixed;
-            bottom: 90px; /* Naik 90px agar aman dari jempol/logo */
+            bottom: 70px; /* Naik 90px agar aman dari jempol/logo */
             right: 25px;
             z-index: 999; /* Pastikan selalu di paling atas layer */
             background-color: #1E3A8A;
