@@ -19,7 +19,13 @@ INFO_FOLDER_ID = "153jOCfhplc22HZsZTNCypqxOjF1p_25m"
 
 # --- KONFIGURASI GOOGLE DRIVE ---
 try:
-    PARENT_FOLDER_ID = st.secrets["gdrive"]["folder_id"]
+    # Mengambil konfigurasi dari Secrets
+    if "gdrive" in st.secrets:
+        PARENT_FOLDER_ID = st.secrets["gdrive"]["folder_id"]
+    else:
+        st.error("Secrets 'gdrive' tidak ditemukan.")
+        st.stop()
+        
     if "?" in PARENT_FOLDER_ID:
         PARENT_FOLDER_ID = PARENT_FOLDER_ID.split("?")[0]
         
@@ -27,11 +33,14 @@ try:
         INFO_FOLDER_ID = PARENT_FOLDER_ID
         
     SCOPES = ['https://www.googleapis.com/auth/drive']
-except:
-    st.error("Konfigurasi Secrets belum diatur dengan benar.")
+except Exception as e:
+    st.error(f"Error Konfigurasi Secrets: {e}")
     st.stop()
 
 def authenticate():
+    if "gdrive_creds" not in st.secrets:
+        st.error("Secrets 'gdrive_creds' tidak ditemukan.")
+        st.stop()
     creds_dict = st.secrets["gdrive_creds"]
     creds = service_account.Credentials.from_service_account_info(
         creds_dict, scopes=SCOPES)
@@ -41,7 +50,7 @@ def get_drive_service():
     try:
         return authenticate()
     except Exception as e:
-        st.error(f"Gagal koneksi: {e}")
+        st.error(f"Gagal koneksi ke Google Drive: {e}")
         st.stop()
 
 def get_folders(service, parent_id):
@@ -77,7 +86,7 @@ def get_announcements(service, folder_id_khusus):
 def local_css():
     st.markdown("""
     <style>
-        /* Sembunyikan Footer Bawaan Streamlit */
+        /* Sembunyikan Footer */
         footer {visibility: hidden;}
         
         /* Gambar Header */
@@ -90,7 +99,7 @@ def local_css():
         /* Info Box */
         .info-box { background-color: #f0f9ff; border-left: 5px solid #0ea5e9; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
         
-        /* TOMBOL APUNG (DIGESER KE ATAS) */
+        /* TOMBOL APUNG (Settingan V5.5 yang Bapak suka) */
         .floating-top-btn {
             position: fixed;
             bottom: 70px; 
@@ -116,7 +125,7 @@ def local_css():
             opacity: 1;
         }
         
-        /* TOMBOL BUKA CUSTOM (STYLE V5.5) */
+        /* TOMBOL BUKA CUSTOM (Style V5.5) */
         .custom-link-btn {
             display: inline-block;
             background-color: #ffffff;
@@ -171,16 +180,12 @@ def render_file_item(name, link, mime_type):
     </div>
     """, unsafe_allow_html=True)
 
-# --- INIT & SESSION STATE (FIX NAVIGASI) ---
+# --- INIT ---
 st.set_page_config(page_title=APP_NAME, page_icon="🏫", layout="wide")
 local_css()
 drive_service = get_drive_service()
 
-# Inisialisasi status halaman jika belum ada
-if 'halaman_aktif' not in st.session_state:
-    st.session_state.halaman_aktif = "Beranda"
-
-# --- SIDEBAR NAVIGASI (DENGAN LOGIKA BARU) ---
+# --- SIDEBAR NAVIGASI (KEMBALI KE VERSI STABIL/SIMPLE) ---
 st.sidebar.title("Navigasi")
 main_menus = ["Beranda"]
 st.sidebar.markdown("**📂 Daftar Isi:**")
@@ -192,26 +197,11 @@ folder_names = list(folder_map.keys())
 footer_menus = ["🔐 Area Admin (Upload Info)", "🚪 Keluar Aplikasi"]
 all_menus = main_menus + folder_names + footer_menus
 
-# Fungsi untuk sinkronisasi pilihan sidebar dengan session state
-def update_nav():
-    st.session_state.halaman_aktif = st.session_state.nav_radio
-
-# Menentukan index default berdasarkan session state
-try:
-    default_index = all_menus.index(st.session_state.halaman_aktif)
-except:
-    default_index = 0
-
-selected_menu = st.sidebar.radio(
-    "Pilih Halaman:", 
-    all_menus, 
-    index=default_index, 
-    key="nav_radio", 
-    on_change=update_nav
-)
+# Gunakan radio button biasa (Tanpa Session State yang rumit agar anti-error)
+selected_menu = st.sidebar.radio("Pilih Halaman:", all_menus)
 
 st.sidebar.markdown("---")
-st.sidebar.caption("v5.6 (Final Fix)")
+st.sidebar.caption("v5.7 (Versi Stabil)")
 
 # =========================================
 # HALAMAN 1: BERANDA
@@ -274,7 +264,7 @@ if selected_menu == "Beranda":
         except: pass
         
         with st.expander("ℹ️ Tentang Aplikasi"):
-            st.caption(f"Dikelola oleh **{CREATOR_NAME}**, didukung sepenuhnya oleh {CREATOR_CONTACT}.")
+            st.caption(f"Dikelola oleh **{CREATOR_NAME}**, didukung sepenuhnya oleh Pengurus KKG Rama 2026-2030.")
 
 # =========================================
 # HALAMAN 2: KATEGORI FOLDER
@@ -364,14 +354,14 @@ elif selected_menu == "🔐 Area Admin (Upload Info)":
         st.error("Password salah.")
 
 # =========================================
-# HALAMAN 4: KELUAR (FIXED)
+# HALAMAN 4: KELUAR
 # =========================================
 elif selected_menu == "🚪 Keluar Aplikasi":
     st.markdown("### 👋 Anda telah keluar.")
     st.markdown("Terima kasih telah menggunakan aplikasi ini.")
     st.divider()
     
-    # Tombol ini sekarang berfungsi memaksa navigasi balik ke Beranda
-    if st.button("🔙 Masuk Kembali Ke Beranda"):
-        st.session_state.halaman_aktif = "Beranda"
+    st.info("Untuk masuk kembali, silakan **klik 'Beranda'** pada menu di sebelah kiri.")
+    
+    if st.button("🔄 Segarkan Aplikasi"):
         st.rerun()
